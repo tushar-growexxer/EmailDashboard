@@ -1,0 +1,750 @@
+{
+  "project_type": "react_dashboard",
+  "design_system": {
+    "theme": "modern_elegant",
+    "color_scheme": "light_with_dark_accents",
+    "typography": "clean_sans_serif",
+    "spacing": "generous_whitespace",
+    "ui_library": "shadcn/ui with Tailwind CSS"
+  },
+  "layout_principles": {
+    "navigation": "left_sidebar_panel",
+    "content_area": "spacious_main_content",
+    "data_density": "breathable_spacing",
+    "visual_hierarchy": "clear_headings_and_sections",
+    "responsive": "desktop_first_with_mobile_optimization"
+  },
+  "authentication": {
+    "login_page": {
+      "layout": "centered_card_on_branded_background",
+      "elements": [
+        {
+          "type": "input",
+          "field": "username",
+          "placeholder": "Enter your email username (e.g., salesmgr)",
+          "validation": "required",
+          "hint": "Use your email username without @domain.com"
+        },
+        {
+          "type": "password",
+          "field": "password",
+          "placeholder": "Enter your password",
+          "validation": "required",
+          "security": "hashed_storage"
+        },
+        {
+          "type": "button",
+          "label": "Sign In",
+          "style": "primary_full_width",
+          "loading_state": "spinner_with_disabled_state"
+        }
+      ],
+      "branding": {
+        "logo": "company_logo_top_center",
+        "tagline": "Email Management Dashboard",
+        "footer": "© 2024 Your Company. All rights reserved."
+      },
+      "design_notes": "Use subtle gradient background, frosted glass effect for login card, smooth transitions on focus states, remember me checkbox optional"
+    },
+    "user_roles": [
+      {
+        "role": "admin",
+        "permissions": ["create_users", "view_all_dashboards", "access_settings"],
+        "additional_features": "User management panel in settings"
+      },
+      {
+        "role": "user",
+        "permissions": ["view_own_data", "view_dashboards", "export_reports"],
+        "data_scope": "filtered_by_email_domain"
+      }
+    ]
+  },
+  "navigation_structure": {
+    "sidebar": {
+      "width": "280px",
+      "background": "subtle_gray_with_active_highlight",
+      "position": "fixed_left",
+      "padding": "24px 16px",
+      "menu_items": [
+        {
+          "label": "Home",
+          "icon": "Home",
+          "route": "/dashboard",
+          "description": "Overview and quick stats"
+        },
+        {
+          "label": "Response Dashboard",
+          "icon": "Mail",
+          "route": "/response",
+          "description": "Unreplied emails by category",
+          "badge": "dynamic_count_of_urgent_items"
+        },
+        {
+          "label": "Aging Report",
+          "icon": "Clock",
+          "route": "/aging",
+          "description": "Time-based email analysis"
+        },
+        {
+          "label": "Sentiment Analysis",
+          "icon": "TrendingUp",
+          "route": "/sentiment",
+          "description": "Customer sentiment trends",
+          "highlight": "premium_feature_indicator"
+        },
+        {
+          "label": "Settings",
+          "icon": "Settings",
+          "route": "/settings",
+          "position": "bottom_separator",
+          "admin_only": true
+        }
+      ],
+      "user_profile": {
+        "position": "top_of_sidebar",
+        "display": ["avatar", "username", "role_badge"],
+        "dropdown": ["profile", "logout"]
+      }
+    }
+  },
+  "dashboard_common_elements": {
+    "refresh_schedule": "daily_at_07:00_AM",
+    "last_refresh_indicator": "timestamp_display_top_right",
+    "filter_section": {
+      "position": "top_of_content_area",
+      "layout": "horizontal_flex_wrap",
+      "spacing": "16px_gap",
+      "background": "subtle_card_background",
+      "padding": "20px",
+      "border_radius": "12px",
+      "margin_bottom": "24px",
+      "filters": [
+        {
+          "type": "combobox_searchable_dropdown",
+          "label": "Customer Name",
+          "placeholder": "Search or select customer",
+          "icon": "Search",
+          "features": ["type_to_search", "dropdown_list", "clear_button"],
+          "width": "280px",
+          "applies_to": ["response_dashboard", "aging_dashboard"]
+        },
+        {
+          "type": "radio_group_or_segmented_control",
+          "label": "Business Type",
+          "options": ["All", "Domestic", "Export"],
+          "default": "All",
+          "style": "modern_segmented_pills",
+          "applies_to": ["response_dashboard", "aging_dashboard"]
+        },
+        {
+          "type": "date_range_selector",
+          "label": "Time Period",
+          "options": [
+            "Last Week",
+            "Last Month",
+            "Past 3 Months",
+            "Last Fiscal Year",
+            "Custom"
+          ],
+          "default": "Last Month",
+          "custom_picker": {
+            "type": "date_range_calendar",
+            "fields": ["from_date", "to_date"],
+            "shows_when": "custom_selected"
+          },
+          "applies_to": ["response_dashboard", "aging_dashboard"]
+        }
+      ],
+      "action_buttons": {
+        "apply_filters": {
+          "label": "Apply Filters",
+          "style": "primary_button",
+          "icon": "Filter"
+        },
+        "reset_filters": {
+          "label": "Reset",
+          "style": "ghost_button",
+          "icon": "X"
+        },
+        "export": {
+          "label": "Export",
+          "style": "secondary_button",
+          "icon": "Download",
+          "position": "far_right"
+        }
+      }
+    }
+  },
+  "dashboard_1_response": {
+    "title": "Unreplied Emails by Category",
+    "subtitle": "Emails with no reply for more than 24 hours",
+    "layout": "data_table_with_interaction",
+    "grouping": "emails_clubbed_by_domain",
+    "table_design": {
+      "style": "modern_bordered_with_hover",
+      "striped_rows": true,
+      "sticky_header": true,
+      "row_height": "comfortable_56px",
+      "columns": [
+        {
+          "header": "User",
+          "field": "user_name",
+          "width": "200px",
+          "sortable": true,
+          "render": "user_avatar_with_name"
+        },
+        {
+          "header": "Inquiry",
+          "field": "inquiry_count",
+          "width": "120px",
+          "alignment": "center",
+          "render": "clickable_badge_number",
+          "color": "blue"
+        },
+        {
+          "header": "Complaint",
+          "field": "complaint_count",
+          "width": "120px",
+          "alignment": "center",
+          "render": "clickable_badge_number",
+          "color": "red"
+        },
+        {
+          "header": "Request",
+          "field": "request_count",
+          "width": "120px",
+          "alignment": "center",
+          "render": "clickable_badge_number",
+          "color": "green"
+        },
+        {
+          "header": "Feedback",
+          "field": "feedback_count",
+          "width": "120px",
+          "alignment": "center",
+          "render": "clickable_badge_number",
+          "color": "purple"
+        },
+        {
+          "header": "Other",
+          "field": "other_count",
+          "width": "120px",
+          "alignment": "center",
+          "render": "clickable_badge_number",
+          "color": "gray"
+        },
+        {
+          "header": "Total",
+          "field": "total_count",
+          "width": "120px",
+          "alignment": "center",
+          "render": "bold_number",
+          "sticky": "right"
+        }
+      ]
+    },
+    "interaction_drilldown": {
+      "trigger": "click_on_count_badge",
+      "action": "open_modal_or_slide_over",
+      "modal_design": {
+        "size": "large_overlay",
+        "title": "Unreplied Emails - {Category}",
+        "subtitle": "User: {Username}",
+        "content": {
+          "type": "email_list_cards",
+          "max_items": 10,
+          "pagination": "load_more_button_if_exceeds_10",
+          "card_design": {
+            "layout": "horizontal_card_with_shadow",
+            "spacing": "12px_gap",
+            "elements": [
+              {
+                "element": "sender_info",
+                "display": ["email_address", "customer_name"],
+                "icon": "Mail"
+              },
+              {
+                "element": "subject",
+                "style": "bold_truncated_with_tooltip",
+                "max_length": "60_characters"
+              },
+              {
+                "element": "preview",
+                "style": "gray_text_2_lines",
+                "max_length": "120_characters"
+              },
+              {
+                "element": "metadata",
+                "display": ["received_timestamp", "category_badge", "time_unreplied"],
+                "layout": "horizontal_chips"
+              },
+              {
+                "element": "actions",
+                "buttons": [
+                  {
+                    "label": "View Email",
+                    "icon": "ExternalLink",
+                    "action": "open_email_client"
+                  },
+                  {
+                    "label": "Mark as Replied",
+                    "icon": "Check",
+                    "style": "ghost"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "footer": {
+          "close_button": "secondary_button_right"
+        }
+      }
+    },
+    "empty_state": {
+      "icon": "CheckCircle",
+      "title": "All Clear!",
+      "description": "No unreplied emails found for the selected filters",
+      "illustration": "success_illustration"
+    }
+  },
+  "dashboard_2_aging": {
+    "title": "Email Aging Report",
+    "subtitle": "Time-based analysis of unreplied emails per user",
+    "layout": "data_table_with_color_coding",
+    "table_design": {
+      "style": "modern_bordered_with_hover",
+      "striped_rows": true,
+      "sticky_header": true,
+      "row_height": "comfortable_56px",
+      "columns": [
+        {
+          "header": "User",
+          "field": "user_name",
+          "width": "200px",
+          "sortable": true,
+          "render": "user_avatar_with_name"
+        },
+        {
+          "header": "24-48 Hours",
+          "field": "count_24_48",
+          "width": "150px",
+          "alignment": "center",
+          "render": "badge_with_color_indicator",
+          "color": "yellow",
+          "tooltip": "Emails unreplied between 24 and 48 hours"
+        },
+        {
+          "header": "48-72 Hours",
+          "field": "count_48_72",
+          "width": "150px",
+          "alignment": "center",
+          "render": "badge_with_color_indicator",
+          "color": "orange",
+          "tooltip": "Emails unreplied between 48 and 72 hours"
+        },
+        {
+          "header": "72-168 Hours",
+          "field": "count_72_168",
+          "width": "150px",
+          "alignment": "center",
+          "render": "badge_with_color_indicator",
+          "color": "red",
+          "tooltip": "Emails unreplied between 3 and 7 days"
+        },
+        {
+          "header": "7+ Days",
+          "field": "count_168_plus",
+          "width": "150px",
+          "alignment": "center",
+          "render": "badge_with_color_indicator",
+          "color": "dark_red",
+          "tooltip": "Emails unreplied for more than 7 days",
+          "alert": "critical_attention_needed"
+        },
+        {
+          "header": "Total Unreplied",
+          "field": "total_count",
+          "width": "150px",
+          "alignment": "center",
+          "render": "bold_number_with_trend",
+          "sticky": "right"
+        }
+      ]
+    },
+    "visual_indicators": {
+      "heat_map": "apply_background_color_intensity_based_on_count",
+      "trend_arrows": "show_increase_decrease_from_previous_period",
+      "alert_badges": "highlight_critical_aging_buckets"
+    },
+    "summary_cards": {
+      "position": "above_table",
+      "layout": "horizontal_4_card_grid",
+      "cards": [
+        {
+          "title": "Total Unreplied",
+          "metric": "sum_of_all_unreplied",
+          "icon": "Mail",
+          "trend": "percentage_change"
+        },
+        {
+          "title": "Critical (7+ Days)",
+          "metric": "sum_of_168_plus_bucket",
+          "icon": "AlertTriangle",
+          "color": "red"
+        },
+        {
+          "title": "Average Response Time",
+          "metric": "calculated_average",
+          "icon": "Clock",
+          "format": "hours_or_days"
+        },
+        {
+          "title": "SLA Compliance",
+          "metric": "percentage_within_sla",
+          "icon": "CheckCircle",
+          "color": "green"
+        }
+      ]
+    }
+  },
+  "dashboard_3_sentiment": {
+    "title": "Customer Sentiment Analysis",
+    "subtitle": "Sentiment trends over time for top 10 customers (by volume from SAP)",
+    "layout": "chart_focused_with_left_panel",
+    "left_panel": {
+      "width": "320px",
+      "background": "subtle_card_background",
+      "padding": "24px",
+      "border_radius": "12px",
+      "sections": [
+        {
+          "type": "filter_section",
+          "title": "Analysis Filters",
+          "filters": [
+            {
+              "type": "combobox_searchable_dropdown",
+              "label": "Select Customer",
+              "placeholder": "Search all customers",
+              "description": "Filter by specific customer or view top 10",
+              "icon": "Building",
+              "features": ["type_to_search", "dropdown_list", "clear_button"],
+              "default": "top_10_by_volume"
+            },
+            {
+              "type": "radio_group_or_segmented_control",
+              "label": "Business Type",
+              "options": ["All", "Domestic", "Export"],
+              "default": "All",
+              "style": "vertical_radio_cards"
+            },
+            {
+              "type": "button_group",
+              "label": "Time Period",
+              "options": [
+                "Last Month",
+                "Last 3 Months",
+                "Last 6 Months",
+                "Last Year"
+              ],
+              "default": "Last 3 Months",
+              "style": "vertical_pill_buttons"
+            }
+          ]
+        },
+        {
+          "type": "legend_section",
+          "title": "Sentiment Scale",
+          "items": [
+            {
+              "label": "Higher Positive",
+              "value": 0,
+              "color": "dark_green",
+              "icon": "SmilePlus"
+            },
+            {
+              "label": "Positive",
+              "value": 1,
+              "color": "green",
+              "icon": "Smile"
+            },
+            {
+              "label": "Neutral",
+              "value": 2,
+              "color": "gray",
+              "icon": "Meh"
+            },
+            {
+              "label": "Negative",
+              "value": 3,
+              "color": "orange",
+              "icon": "Frown"
+            },
+            {
+              "label": "Higher Negative",
+              "value": 4,
+              "color": "red",
+              "icon": "FrownOpen"
+            }
+          ]
+        },
+        {
+          "type": "insight_card",
+          "title": "Key Insights",
+          "content": "dynamic_ai_generated_insights",
+          "style": "bordered_info_card_with_icon"
+        }
+      ]
+    },
+    "main_content": {
+      "chart_area": {
+        "type": "line_chart_multi_series",
+        "library": "recharts",
+        "responsive": true,
+        "height": "500px",
+        "configuration": {
+          "x_axis": {
+            "dataKey": "date",
+            "label": "Time Period",
+            "format": "MMM DD, YYYY"
+          },
+          "y_axis": {
+            "label": "Sentiment Score",
+            "domain": [0, 4],
+            "ticks": [0, 1, 2, 3, 4],
+            "reversed": false
+          },
+          "lines": {
+            "type": "monotone",
+            "stroke_width": 2.5,
+            "dot": {
+              "size": 4,
+              "hover_size": 6
+            },
+            "colors": "distinct_palette_for_each_customer",
+            "max_lines": 10
+          },
+          "tooltip": {
+            "style": "modern_card_with_shadow",
+            "content": [
+              "customer_name",
+              "sentiment_score",
+              "sentiment_label",
+              "date",
+              "email_volume"
+            ]
+          },
+          "legend": {
+            "position": "bottom",
+            "layout": "horizontal_wrap",
+            "clickable": "toggle_line_visibility"
+          },
+          "grid": {
+            "stroke_dasharray": "3 3",
+            "color": "subtle_gray"
+          }
+        },
+        "annotations": {
+          "reference_line": {
+            "y": 2,
+            "label": "Neutral Baseline",
+            "stroke": "dashed_gray"
+          }
+        }
+      },
+      "summary_cards": {
+        "position": "above_chart",
+        "layout": "horizontal_3_card_grid",
+        "cards": [
+          {
+            "title": "Average Sentiment",
+            "metric": "weighted_average_sentiment_score",
+            "icon": "TrendingUp",
+            "color": "dynamic_based_on_score"
+          },
+          {
+            "title": "Trend Direction",
+            "metric": "improving_or_declining",
+            "icon": "ArrowUpDown",
+            "visual": "trend_arrow_with_percentage"
+          },
+          {
+            "title": "Customers Analyzed",
+            "metric": "count_of_customers_in_chart",
+            "icon": "Users",
+            "max_value": 10
+          }
+        ]
+      }
+    },
+    "data_table_toggle": {
+      "button": "View Data Table",
+      "position": "top_right_of_chart",
+      "action": "expand_table_below_chart",
+      "table_columns": [
+        "customer_name",
+        "date",
+        "sentiment_score",
+        "sentiment_label",
+        "email_volume",
+        "change_from_previous"
+      ]
+    }
+  },
+  "settings_page_admin": {
+    "title": "Settings",
+    "tabs": [
+      {
+        "label": "User Management",
+        "icon": "Users",
+        "content": {
+          "actions": {
+            "create_user_button": {
+              "label": "Add New User",
+              "icon": "UserPlus",
+              "style": "primary_button_top_right",
+              "modal": {
+                "title": "Create New User",
+                "form_fields": [
+                  {
+                    "type": "text",
+                    "label": "Email Address",
+                    "placeholder": "user@company.com",
+                    "validation": "required_email_format",
+                    "help_text": "User will login with username part only"
+                  },
+                  {
+                    "type": "text",
+                    "label": "Full Name",
+                    "placeholder": "John Doe",
+                    "validation": "required"
+                  },
+                  {
+                    "type": "password",
+                    "label": "Initial Password",
+                    "placeholder": "Enter secure password",
+                    "validation": "min_8_chars_with_complexity",
+                    "generator": "auto_generate_button"
+                  },
+                  {
+                    "type": "select",
+                    "label": "Role",
+                    "options": ["User", "Admin"],
+                    "default": "User"
+                  },
+                  {
+                    "type": "select",
+                    "label": "Department",
+                    "options": ["Sales", "Support", "Marketing", "Operations"]
+                  }
+                ],
+                "buttons": [
+                  {
+                    "label": "Create User",
+                    "type": "submit",
+                    "style": "primary"
+                  },
+                  {
+                    "label": "Cancel",
+                    "type": "button",
+                    "style": "ghost"
+                  }
+                ]
+              }
+            }
+          },
+          "user_list_table": {
+            "style": "modern_data_table",
+            "columns": [
+              "avatar",
+              "full_name",
+              "email",
+              "role",
+              "department",
+              "status",
+              "created_date",
+              "last_login",
+              "actions"
+            ],
+            "row_actions": [
+              "edit",
+              "reset_password",
+              "deactivate",
+              "delete"
+            ]
+          }
+        }
+      },
+      {
+        "label": "Email Configuration",
+        "icon": "Settings",
+        "content": "email_domain_settings_and_refresh_schedule"
+      },
+      {
+        "label": "Notifications",
+        "icon": "Bell",
+        "content": "alert_thresholds_and_notification_preferences"
+      }
+    ]
+  },
+  "ui_components_specifications": {
+    "color_palette": {
+      "primary": "#3B82F6",
+      "secondary": "#8B5CF6",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "danger": "#EF4444",
+      "neutral": "#6B7280",
+      "background": "#F9FAFB",
+      "surface": "#FFFFFF",
+      "border": "#E5E7EB"
+    },
+    "typography": {
+      "heading_1": "text-3xl font-bold",
+      "heading_2": "text-2xl font-semibold",
+      "heading_3": "text-xl font-semibold",
+      "body": "text-base",
+      "caption": "text-sm text-gray-600"
+    },
+    "spacing": {
+      "section_gap": "32px",
+      "card_padding": "24px",
+      "element_gap": "16px",
+      "tight_gap": "8px"
+    },
+    "shadows": {
+      "card": "shadow-sm hover:shadow-md transition-shadow",
+      "modal": "shadow-2xl",
+      "dropdown": "shadow-lg"
+    },
+    "animations": {
+      "page_transition": "fade_in_300ms",
+      "modal_open": "scale_up_200ms",
+      "button_hover": "scale_102_smooth",
+      "data_update": "pulse_effect"
+    },
+    "interactions": {
+      "button_states": ["default", "hover", "active", "disabled", "loading"],
+      "input_states": ["default", "focus", "error", "disabled"],
+      "feedback": ["success_toast", "error_toast", "loading_spinner"]
+    }
+  },
+  "responsive_breakpoints": {
+    "desktop": "1280px_and_above",
+    "tablet": "768px_to_1279px",
+    "mobile": "below_768px",
+    "sidebar_collapse": "below_1024px"
+  },
+  "accessibility": {
+    "standards": "WCAG_2.1_AA",
+    "keyboard_navigation": "full_support_with_visible_focus",
+    "screen_reader": "aria_labels_on_all_interactive_elements",
+    "color_contrast": "minimum_4.5:1_ratio"
+  },
+  "performance": {
+    "data_loading": "skeleton_loaders_during_fetch",
+    "pagination": "virtual_scrolling_for_large_lists",
+    "caching": "cache_dashboard_data_with_refresh_indicator",
+    "optimization": "lazy_load_charts_and_heavy_components"
+  }
+}
