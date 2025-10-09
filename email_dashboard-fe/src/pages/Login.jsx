@@ -66,16 +66,13 @@ const Login = () => {
                     id="username"
                     name="username"
                     type="text"
-                    placeholder="Enter your email username (e.g., salesmgr)"
+                    placeholder="Enter Email"
                     value={formData.username}
                     onChange={handleChange}
                     className="pl-10"
                     required
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Use your email username without @domain.com
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -88,7 +85,7 @@ const Login = () => {
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder="Enter Password"
                     value={formData.password}
                     onChange={handleChange}
                     className="pl-10"

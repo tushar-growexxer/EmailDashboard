@@ -1,0 +1,51 @@
+{
+  "name": "email_dashboard-be",
+  "version": "1.0.0",
+  "description": "Email Dashboard Backend (Express + TypeScript)",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "type-check": "tsc --noEmit",
+    "test:api": "node scripts/test-api.js",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean && npm run type-check",
+    "setup:db": "echo 'Please run the SQL script in scripts/init-database.sql on your SAP HANA database'",
+    "dev:offline": "DB_HOST= SKIP_DB_CONNECTION=true pnpm dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.0",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.1",
+    "hdb": "^2.26.1",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
+    "eslint": "^9.4.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

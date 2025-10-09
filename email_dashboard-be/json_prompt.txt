@@ -1,0 +1,769 @@
+{
+  "backend_initialization": {
+    "project_name": "email_dashboard-be",
+    "framework": "Express.js with TypeScript",
+    "database": "SAP HANA",
+    "objective": "Create production-ready, scalable backend server with industry-standard architecture",
+
+    "technology_stack": {
+      "runtime": "Node.js (v18+ recommended)",
+      "framework": "Express.js",
+      "language": "TypeScript",
+      "database": "SAP HANA with @sap/hana-client",
+      "authentication": "JWT (jsonwebtoken)",
+      "password_hashing": "bcrypt",
+      "validation": "express-validator or zod",
+      "environment": "dotenv",
+      "logging": "winston or pino",
+      "security": "helmet, cors, express-rate-limit"
+    },
+
+    "required_dependencies": {
+      "production": [
+        "express",
+        "dotenv",
+        "@sap/hana-client",
+        "bcrypt",
+        "jsonwebtoken",
+        "cors",
+        "helmet",
+        "express-rate-limit",
+        "express-validator",
+        "winston",
+        "compression"
+      ],
+      "development": [
+        "nodemon",
+        "typescript",
+        "@types/node",
+        "@types/express",
+        "@types/bcrypt",
+        "@types/jsonwebtoken",
+        "@types/cors",
+        "ts-node",
+        "eslint",
+        "@typescript-eslint/eslint-plugin",
+        "@typescript-eslint/parser",
+        "prettier"
+      ]
+    },
+
+    "installation_commands": {
+      "add_production_deps": "pnpm add express dotenv @sap/hana-client bcrypt jsonwebtoken cors helmet express-rate-limit express-validator winston compression",
+      "add_dev_deps": "pnpm add -D nodemon typescript @types/node @types/express @types/bcrypt @types/jsonwebtoken @types/cors ts-node eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser prettier",
+      "init_typescript": "pnpm tsc --init"
+    }
+  },
+
+  "project_structure": {
+    "folder_hierarchy": {
+      "root": "email_dashboard-be/",
+      "structure": {
+        "src/": {
+          "config/": [
+            "database.ts (SAP HANA connection config)",
+            "env.ts (Environment variables validation)",
+            "logger.ts (Winston logger setup)"
+          ],
+          "controllers/": [
+            "auth.controller.ts (Login, logout, token refresh)",
+            "user.controller.ts (User management - admin only)",
+            "email.controller.ts (Email analytics endpoints)",
+            "sentiment.controller.ts (Sentiment analysis endpoints)"
+          ],
+          "middlewares/": [
+            "auth.middleware.ts (JWT verification)",
+            "rbac.middleware.ts (Role-based access control)",
+            "validation.middleware.ts (Request validation)",
+            "error.middleware.ts (Global error handler)",
+            "requestLogger.middleware.ts (Request logging)"
+          ],
+          "models/": [
+            "user.model.ts (User interface and queries)",
+            "email.model.ts (Email data queries)",
+            "sentiment.model.ts (Sentiment data queries)"
+          ],
+          "routes/": [
+            "index.ts (Main router)",
+            "auth.routes.ts",
+            "user.routes.ts",
+            "email.routes.ts",
+            "sentiment.routes.ts"
+          ],
+          "services/": [
+            "auth.service.ts (Authentication logic)",
+            "user.service.ts (User CRUD operations)",
+            "email.service.ts (Email analytics business logic)",
+            "sentiment.service.ts (Sentiment analysis business logic)",
+            "hana.service.ts (SAP HANA database operations)"
+          ],
+          "utils/": [
+            "responses.ts (Standard API response formats)",
+            "validators.ts (Custom validation functions)",
+            "constants.ts (App constants)"
+          ],
+          "types/": [
+            "express.d.ts (Extend Express types)",
+            "index.ts (Common TypeScript interfaces)"
+          ],
+          "app.ts": "Express app configuration",
+          "server.ts": "Server entry point"
+        },
+        "logs/": "Application logs (gitignored)",
+        ".env": "Environment variables",
+        ".env.example": "Environment variables template",
+        ".gitignore": "Git ignore file",
+        "tsconfig.json": "TypeScript configuration",
+        ".eslintrc.json": "ESLint configuration",
+        ".prettierrc": "Prettier configuration",
+        "package.json": "Package configuration",
+        "README.md": "Project documentation"
+      }
+    }
+  },
+
+  "typescript_configuration": {
+    "tsconfig_json": {
+      "compilerOptions": {
+        "target": "ES2020",
+        "module": "commonjs",
+        "lib": ["ES2020"],
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "moduleResolution": "node",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true
+      },
+      "include": ["src/**/*"],
+      "exclude": ["node_modules", "dist"]
+    }
+  },
+
+  "environment_configuration": {
+    "env_example": {
+      "NODE_ENV": "development | production | test",
+      "PORT": "3000",
+      "API_VERSION": "v1",
+      
+      "SAP_HANA_HOST": "your-hana-host.com",
+      "SAP_HANA_PORT": "30015",
+      "SAP_HANA_USER": "your-db-user",
+      "SAP_HANA_PASSWORD": "your-db-password",
+      "SAP_HANA_DATABASE": "your-database-name",
+      "SAP_HANA_SCHEMA": "your-schema-name",
+      
+      "JWT_SECRET": "your-super-secret-jwt-key-min-32-chars",
+      "JWT_EXPIRES_IN": "24h",
+      "JWT_REFRESH_SECRET": "your-refresh-token-secret",
+      "JWT_REFRESH_EXPIRES_IN": "7d",
+      
+      "BCRYPT_SALT_ROUNDS": "12",
+      
+      "CORS_ORIGIN": "http://localhost:5173",
+      "RATE_LIMIT_WINDOW_MS": "900000",
+      "RATE_LIMIT_MAX_REQUESTS": "100",
+      
+      "LOG_LEVEL": "info",
+      "LOG_FILE_PATH": "./logs/app.log"
+    },
+
+    "env_validation": {
+      "file": "src/config/env.ts",
+      "purpose": "Validate required environment variables on startup",
+      "approach": "Use zod or custom validation function"
+    }
+  },
+
+  "database_setup": {
+    "sap_hana_configuration": {
+      "file": "src/config/database.ts",
+      
+      "connection_setup": {
+        "library": "@sap/hana-client",
+        "connection_pool": true,
+        "pool_size": 10,
+        "connection_timeout": 30000,
+        "idle_timeout": 60000,
+        
+        "implementation_example": `
+          import hana from '@sap/hana-client';
+          
+          const connOptions = {
+            host: process.env.SAP_HANA_HOST,
+            port: process.env.SAP_HANA_PORT,
+            uid: process.env.SAP_HANA_USER,
+            pwd: process.env.SAP_HANA_PASSWORD,
+            databaseName: process.env.SAP_HANA_DATABASE,
+            encrypt: true,
+            sslValidateCertificate: false
+          };
+          
+          export const createConnection = () => {
+            const connection = hana.createConnection();
+            return new Promise((resolve, reject) => {
+              connection.connect(connOptions, (err) => {
+                if (err) reject(err);
+                else resolve(connection);
+              });
+            });
+          };
+        `
+      },
+
+      "users_table_schema": {
+        "table_name": "USERS",
+        "schema": "Your schema name from env",
+        "full_table_reference": "SCHEMA_NAME.USERS",
+        
+        "columns": {
+          "id": {
+            "type": "NVARCHAR(36)",
+            "primary_key": true,
+            "default": "SYSUUID",
+            "description": "Unique user identifier (UUID)"
+          },
+          "email": {
+            "type": "NVARCHAR(255)",
+            "unique": true,
+            "not_null": true,
+            "description": "User email address (username@company.com)"
+          },
+          "username": {
+            "type": "NVARCHAR(100)",
+            "unique": true,
+            "not_null": true,
+            "description": "Extracted username (e.g., 'salesmgr' from salesmgr@company.com)"
+          },
+          "password_hash": {
+            "type": "NVARCHAR(255)",
+            "not_null": true,
+            "description": "Bcrypt hashed password"
+          },
+          "full_name": {
+            "type": "NVARCHAR(255)",
+            "not_null": true,
+            "description": "User's full display name"
+          },
+          "role": {
+            "type": "NVARCHAR(20)",
+            "not_null": true,
+            "default": "'user'",
+            "check": "role IN ('user', 'admin')",
+            "description": "User role for RBAC"
+          },
+          "is_active": {
+            "type": "BOOLEAN",
+            "not_null": true,
+            "default": "TRUE",
+            "description": "Account active status"
+          },
+          "last_login": {
+            "type": "TIMESTAMP",
+            "nullable": true,
+            "description": "Last successful login timestamp"
+          },
+          "created_at": {
+            "type": "TIMESTAMP",
+            "not_null": true,
+            "default": "CURRENT_TIMESTAMP",
+            "description": "Account creation timestamp"
+          },
+          "updated_at": {
+            "type": "TIMESTAMP",
+            "not_null": true,
+            "default": "CURRENT_TIMESTAMP",
+            "description": "Last update timestamp"
+          },
+          "created_by": {
+            "type": "NVARCHAR(36)",
+            "nullable": true,
+            "description": "Admin ID who created this user"
+          }
+        },
+
+        "create_table_sql": `
+          CREATE TABLE SCHEMA_NAME.USERS (
+            id NVARCHAR(36) PRIMARY KEY DEFAULT SYSUUID,
+            email NVARCHAR(255) UNIQUE NOT NULL,
+            username NVARCHAR(100) UNIQUE NOT NULL,
+            password_hash NVARCHAR(255) NOT NULL,
+            full_name NVARCHAR(255) NOT NULL,
+            role NVARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            last_login TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_by NVARCHAR(36)
+          );
+          
+          CREATE INDEX idx_users_email ON SCHEMA_NAME.USERS(email);
+          CREATE INDEX idx_users_username ON SCHEMA_NAME.USERS(username);
+          CREATE INDEX idx_users_role ON SCHEMA_NAME.USERS(role);
+        `,
+
+        "seed_admin_user": {
+          "purpose": "Create initial admin user for system access",
+          "script_file": "scripts/seed-admin.ts",
+          "default_credentials": {
+            "email": "admin@company.com",
+            "username": "admin",
+            "password": "Admin@123",
+            "full_name": "System Administrator",
+            "role": "admin"
+          },
+          "note": "Admin should change password immediately after first login"
+        }
+      }
+    }
+  },
+
+  "core_files_implementation": {
+    "server_entry_point": {
+      "file": "src/server.ts",
+      "responsibilities": [
+        "Load environment variables",
+        "Initialize database connection",
+        "Start Express server",
+        "Handle graceful shutdown",
+        "Log server startup"
+      ],
+      
+      "code_structure": `
+        import dotenv from 'dotenv';
+        dotenv.config();
+        
+        import app from './app';
+        import { createConnection } from './config/database';
+        import logger from './config/logger';
+        
+        const PORT = process.env.PORT || 3000;
+        
+        const startServer = async () => {
+          try {
+            // Test database connection
+            await createConnection();
+            logger.info('Database connection established');
+            
+            // Start server
+            const server = app.listen(PORT, () => {
+              logger.info(\`Server running on port \${PORT} in \${process.env.NODE_ENV} mode\`);
+            });
+            
+            // Graceful shutdown
+            process.on('SIGTERM', () => {
+              logger.info('SIGTERM signal received: closing HTTP server');
+              server.close(() => {
+                logger.info('HTTP server closed');
+                process.exit(0);
+              });
+            });
+          } catch (error) {
+            logger.error('Failed to start server:', error);
+            process.exit(1);
+          }
+        };
+        
+        startServer();
+      `
+    },
+
+    "express_app_configuration": {
+      "file": "src/app.ts",
+      "responsibilities": [
+        "Configure Express middleware",
+        "Setup security (helmet, cors, rate limiting)",
+        "Mount routes",
+        "Setup error handling",
+        "Configure logging"
+      ],
+
+      "middleware_order": [
+        "1. Helmet (security headers)",
+        "2. CORS",
+        "3. Body parser (express.json, express.urlencoded)",
+        "4. Compression",
+        "5. Request logger",
+        "6. Rate limiting",
+        "7. API routes",
+        "8. 404 handler",
+        "9. Global error handler"
+      ],
+
+      "code_structure": `
+        import express, { Application, Request, Response, NextFunction } from 'express';
+        import helmet from 'helmet';
+        import cors from 'cors';
+        import compression from 'compression';
+        import rateLimit from 'express-rate-limit';
+        
+        import routes from './routes';
+        import { errorHandler } from './middlewares/error.middleware';
+        import { requestLogger } from './middlewares/requestLogger.middleware';
+        import logger from './config/logger';
+        
+        const app: Application = express();
+        
+        // Security middleware
+        app.use(helmet());
+        app.use(cors({
+          origin: process.env.CORS_ORIGIN,
+          credentials: true
+        }));
+        
+        // Body parsing
+        app.use(express.json({ limit: '10mb' }));
+        app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+        
+        // Compression
+        app.use(compression());
+        
+        // Request logging
+        app.use(requestLogger);
+        
+        // Rate limiting
+        const limiter = rateLimit({
+          windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
+          max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+          message: 'Too many requests from this IP, please try again later'
+        });
+        app.use('/api', limiter);
+        
+        // Health check
+        app.get('/health', (req: Request, res: Response) => {
+          res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+        });
+        
+        // API routes
+        app.use(\`/api/\${process.env.API_VERSION || 'v1'}\`, routes);
+        
+        // 404 handler
+        app.use((req: Request, res: Response) => {
+          res.status(404).json({
+            success: false,
+            message: 'Route not found',
+            path: req.path
+          });
+        });
+        
+        // Global error handler
+        app.use(errorHandler);
+        
+        export default app;
+      `
+    },
+
+    "logger_configuration": {
+      "file": "src/config/logger.ts",
+      "library": "winston",
+      
+      "features": [
+        "Console logging for development",
+        "File logging for production",
+        "Error-specific log file",
+        "Log rotation (optional with winston-daily-rotate-file)",
+        "Structured JSON logs",
+        "Different log levels (error, warn, info, debug)"
+      ],
+
+      "implementation": `
+        import winston from 'winston';
+        
+        const logLevel = process.env.LOG_LEVEL || 'info';
+        
+        const logger = winston.createLogger({
+          level: logLevel,
+          format: winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+            winston.format.errors({ stack: true }),
+            winston.format.splat(),
+            winston.format.json()
+          ),
+          defaultMeta: { service: 'email-dashboard-api' },
+          transports: [
+            new winston.transports.File({ 
+              filename: 'logs/error.log', 
+              level: 'error' 
+            }),
+            new winston.transports.File({ 
+              filename: 'logs/combined.log' 
+            })
+          ]
+        });
+        
+        if (process.env.NODE_ENV !== 'production') {
+          logger.add(new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.colorize(),
+              winston.format.simple()
+            )
+          }));
+        }
+        
+        export default logger;
+      `
+    },
+
+    "authentication_middleware": {
+      "file": "src/middlewares/auth.middleware.ts",
+      "purpose": "Verify JWT tokens and attach user to request",
+      
+      "implementation": `
+        import { Request, Response, NextFunction } from 'express';
+        import jwt from 'jsonwebtoken';
+        import { AppError } from '../utils/responses';
+        
+        interface JWTPayload {
+          userId: string;
+          email: string;
+          role: string;
+        }
+        
+        declare global {
+          namespace Express {
+            interface Request {
+              user?: JWTPayload;
+            }
+          }
+        }
+        
+        export const authenticateToken = (
+          req: Request, 
+          res: Response, 
+          next: NextFunction
+        ): void => {
+          const authHeader = req.headers['authorization'];
+          const token = authHeader && authHeader.split(' ')[1];
+          
+          if (!token) {
+            throw new AppError('Access token required', 401);
+          }
+          
+          try {
+            const decoded = jwt.verify(
+              token, 
+              process.env.JWT_SECRET!
+            ) as JWTPayload;
+            
+            req.user = decoded;
+            next();
+          } catch (error) {
+            throw new AppError('Invalid or expired token', 401);
+          }
+        };
+        
+        export const requireAdmin = (
+          req: Request, 
+          res: Response, 
+          next: NextFunction
+        ): void => {
+          if (req.user?.role !== 'admin') {
+            throw new AppError('Admin access required', 403);
+          }
+          next();
+        };
+      `
+    },
+
+    "error_handler_middleware": {
+      "file": "src/middlewares/error.middleware.ts",
+      "purpose": "Centralized error handling with logging",
+      
+      "implementation": `
+        import { Request, Response, NextFunction } from 'express';
+        import logger from '../config/logger';
+        
+        export class AppError extends Error {
+          statusCode: number;
+          isOperational: boolean;
+          
+          constructor(message: string, statusCode: number = 500) {
+            super(message);
+            this.statusCode = statusCode;
+            this.isOperational = true;
+            Error.captureStackTrace(this, this.constructor);
+          }
+        }
+        
+        export const errorHandler = (
+          err: Error | AppError,
+          req: Request,
+          res: Response,
+          next: NextFunction
+        ): void => {
+          let statusCode = 500;
+          let message = 'Internal server error';
+          
+          if (err instanceof AppError) {
+            statusCode = err.statusCode;
+            message = err.message;
+          }
+          
+          logger.error({
+            message: err.message,
+            stack: err.stack,
+            path: req.path,
+            method: req.method,
+            statusCode
+          });
+          
+          res.status(statusCode).json({
+            success: false,
+            message,
+            ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+          });
+        };
+        
+        export const asyncHandler = (fn: Function) => {
+          return (req: Request, res: Response, next: NextFunction) => {
+            Promise.resolve(fn(req, res, next)).catch(next);
+          };
+        };
+      `
+    }
+  },
+
+  "authentication_implementation": {
+    "auth_service": {
+      "file": "src/services/auth.service.ts",
+      "methods": [
+        "login(username: string, password: string)",
+        "generateTokens(userId: string, email: string, role: string)",
+        "refreshToken(refreshToken: string)",
+        "updateLastLogin(userId: string)"
+      ],
+      
+      "password_handling": {
+        "hashing": "bcrypt with configurable salt rounds",
+        "verification": "bcrypt.compare()",
+        "salt_rounds": "12 (from env)"
+      },
+
+      "jwt_strategy": {
+        "access_token": "Short-lived (24h), contains user identity and role",
+        "refresh_token": "Long-lived (7d), used to generate new access tokens",
+        "token_payload": "{ userId, email, role, iat, exp }"
+      }
+    },
+
+    "auth_controller": {
+      "file": "src/controllers/auth.controller.ts",
+      "endpoints": [
+        "POST /api/v1/auth/login - User login",
+        "POST /api/v1/auth/refresh - Refresh access token",
+        "POST /api/v1/auth/logout - Logout (optional, client-side token removal)"
+      ]
+    },
+
+    "user_management": {
+      "admin_only_endpoints": [
+        "POST /api/v1/users - Create new user",
+        "GET /api/v1/users - List all users",
+        "GET /api/v1/users/:id - Get user details",
+        "PUT /api/v1/users/:id - Update user",
+        "DELETE /api/v1/users/:id - Deactivate user",
+        "POST /api/v1/users/:id/reset-password - Reset user password"
+      ]
+    }
+  },
+
+  "package_json_scripts": {
+    "scripts": {
+      "dev": "nodemon --exec ts-node src/server.ts",
+      "build": "tsc",
+      "start": "node dist/server.js",
+      "lint": "eslint src/**/*.ts",
+      "lint:fix": "eslint src/**/*.ts --fix",
+      "format": "prettier --write \"src/**/*.ts\"",
+      "type-check": "tsc --noEmit"
+    }
+  },
+
+  "api_response_standards": {
+    "file": "src/utils/responses.ts",
+    
+    "success_response": {
+      "structure": {
+        "success": true,
+        "message": "Optional success message",
+        "data": "Actual response data",
+        "meta": "Optional metadata (pagination, etc.)"
+      }
+    },
+
+    "error_response": {
+      "structure": {
+        "success": false,
+        "message": "Error message",
+        "errors": "Optional validation errors array",
+        "stack": "Only in development mode"
+      }
+    }
+  },
+
+  "next_steps_after_initialization": {
+    "immediate": [
+      "1. Create SAP HANA USERS table",
+      "2. Seed initial admin user",
+      "3. Test database connection",
+      "4. Implement login endpoint",
+      "5. Test authentication flow"
+    ],
+    "phase_2": [
+      "6. Implement user management endpoints",
+      "7. Create email analytics endpoints",
+      "8. Create sentiment analysis endpoints",
+      "9. Add request validation",
+      "10. Write API documentation"
+    ]
+  },
+
+  "security_best_practices": {
+    "implemented": [
+      "Password hashing with bcrypt (12 rounds)",
+      "JWT for stateless authentication",
+      "Rate limiting to prevent brute force",
+      "Helmet for security headers",
+      "CORS configuration",
+      "Input validation",
+      "SQL injection prevention (parameterized queries)",
+      "Error handling without sensitive data exposure",
+      "HTTPS enforcement (in production)",
+      "Environment variable validation"
+    ]
+  },
+
+  "code_quality_tools": {
+    "eslint_config": {
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "rules": {
+        "no-console": "warn",
+        "@typescript-eslint/no-explicit-any": "error",
+        "@typescript-eslint/explicit-function-return-type": "warn"
+      }
+    },
+    
+    "prettier_config": {
+      "semi": true,
+      "trailingComma": "es5",
+      "singleQuote": true,
+      "printWidth": 100,
+      "tabWidth": 2
+    }
+  }
+}
