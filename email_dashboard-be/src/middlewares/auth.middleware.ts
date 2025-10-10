@@ -38,13 +38,13 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // Get token from cookie instead of Authorization header
+    const token = req.cookies?.auth_token;
 
     if (!token) {
       res.status(401).json({
         success: false,
-        message: 'Access token is required',
+        message: 'Authentication token is required',
       });
       return;
     }
@@ -157,7 +157,7 @@ export const requireAuth = authorizeRoles(['admin', 'user']);
  */
 export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string => {
   const jwtSecret = process.env.JWT_SECRET;
-  const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '8h';
+  const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '30m'; // Changed from 8h to 30m
 
   if (!jwtSecret) {
     throw new Error('JWT_SECRET is not configured');

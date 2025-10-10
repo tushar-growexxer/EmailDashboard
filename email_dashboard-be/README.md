@@ -49,13 +49,12 @@ RATE_LIMIT_MAX_REQUESTS=100
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_EXPIRES_IN=8h
+JWT_EXPIRES_IN=30m
 
 # SAP HANA Database Configuration (Optional)
 DB_HOST=your-hana-host
 DB_PORT=30015
 DB_USER=your-db-username
-DB_PASSWORD=your-db-password
 DB_SCHEMA=YOUR_SCHEMA
 DB_USERS_TABLE=YOUR_USERS_TABLE
 ```

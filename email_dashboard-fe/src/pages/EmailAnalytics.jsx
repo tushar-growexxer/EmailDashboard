@@ -15,11 +15,15 @@ const mockData = [
     id: 1,
     userName: "John Smith",
     email: "john.smith@company.com",
-    inquiry: 5,
+    status: 0,
     complaint: 2,
-    request: 3,
-    feedback: 1,
-    other: 0,
+    inquiry: 5,
+    pricingNegotiation: 0,
+    proposal: 3,
+    logistics: 0,
+    acknowledgement: 1,
+    statusOfInquiry: 0,
+    unclassified: 0,
     total: 11,
     count_24_48: 3,
     count_48_72: 2,
@@ -31,11 +35,15 @@ const mockData = [
     id: 2,
     userName: "Sarah Johnson",
     email: "sarah.j@company.com",
-    inquiry: 8,
+    status: 0,
     complaint: 4,
-    request: 2,
-    feedback: 0,
-    other: 1,
+    inquiry: 8,
+    pricingNegotiation: 0,
+    proposal: 2,
+    logistics: 0,
+    acknowledgement: 0,
+    statusOfInquiry: 1,
+    unclassified: 0,
     total: 15,
     count_24_48: 5,
     count_48_72: 4,
@@ -47,11 +55,15 @@ const mockData = [
     id: 3,
     userName: "Mike Wilson",
     email: "mike.w@company.com",
-    inquiry: 3,
+    status: 0,
     complaint: 1,
-    request: 5,
-    feedback: 2,
-    other: 0,
+    inquiry: 3,
+    pricingNegotiation: 0,
+    proposal: 5,
+    logistics: 0,
+    acknowledgement: 2,
+    statusOfInquiry: 0,
+    unclassified: 0,
     total: 11,
     count_24_48: 4,
     count_48_72: 3,
@@ -79,8 +91,18 @@ const mockEmails = [
     subject: "Follow-up on previous inquiry",
     preview: "I sent an email last week regarding the product specifications. Waiting for your response...",
     receivedAt: "2024-01-14T14:20:00",
-    category: "Inquiry",
+    category: "Status-of-Inquiry",
     timeUnreplied: "48 hours",
+  },
+  {
+    id: 3,
+    sender: "customer3@example.com",
+    customerName: "Tech Solutions Ltd",
+    subject: "Proposal review and feedback requested",
+    preview: "Thank you for your proposal. We would like to discuss some modifications before proceeding...",
+    receivedAt: "2024-01-13T09:15:00",
+    category: "Proposal",
+    timeUnreplied: "72 hours",
   },
 ];
 
@@ -133,14 +155,21 @@ const EmailAnalytics = () => {
   };
 
   const getCategoryColor = (category) => {
+    // Normalize category name for lookup (remove spaces, hyphens, convert to camelCase)
+    const normalizedCategory = category.toLowerCase().replace(/[-\s]/g, '');
+
     const colors = {
-      inquiry: "blue",
+      status: "blue",
       complaint: "red",
-      request: "green",
-      feedback: "purple",
-      other: "gray",
+      inquiry: "green",
+      pricingnegotiation: "purple",
+      proposal: "orange",
+      logistics: "cyan",
+      acknowledgement: "yellow",
+      statusofinquiry: "indigo",
+      unclassified: "gray",
     };
-    return colors[category] || "gray";
+    return colors[normalizedCategory] || "gray";
   };
 
   const getInitials = (name) => {
@@ -213,11 +242,15 @@ const EmailAnalytics = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">User</TableHead>
-                  <TableHead className="text-center">Inquiry</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-center">Complaint</TableHead>
-                  <TableHead className="text-center">Request</TableHead>
-                  <TableHead className="text-center">Feedback</TableHead>
-                  <TableHead className="text-center">Other</TableHead>
+                  <TableHead className="text-center">Inquiry</TableHead>
+                  <TableHead className="text-center">Pricing-Negotiation</TableHead>
+                  <TableHead className="text-center">Proposal</TableHead>
+                  <TableHead className="text-center">Logistics</TableHead>
+                  <TableHead className="text-center">Acknowledgement</TableHead>
+                  <TableHead className="text-center">Status-of-Inquiry</TableHead>
+                  <TableHead className="text-center">Unclassified</TableHead>
                   <TableHead className="text-center font-bold">Total</TableHead>
                 </TableRow>
               </TableHeader>
@@ -239,11 +272,11 @@ const EmailAnalytics = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
-                        variant={getCategoryColor("inquiry")}
-                        className={row.inquiry > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Inquiry", row.inquiry)}
+                        variant={getCategoryColor("status")}
+                        className={row.status > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Status", row.status)}
                       >
-                        {row.inquiry}
+                        {row.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
@@ -257,29 +290,65 @@ const EmailAnalytics = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
-                        variant={getCategoryColor("request")}
-                        className={row.request > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Request", row.request)}
+                        variant={getCategoryColor("inquiry")}
+                        className={row.inquiry > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Inquiry", row.inquiry)}
                       >
-                        {row.request}
+                        {row.inquiry}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
-                        variant={getCategoryColor("feedback")}
-                        className={row.feedback > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Feedback", row.feedback)}
+                        variant={getCategoryColor("pricingNegotiation")}
+                        className={row.pricingNegotiation > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Pricing-Negotiation", row.pricingNegotiation)}
                       >
-                        {row.feedback}
+                        {row.pricingNegotiation}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
-                        variant={getCategoryColor("other")}
-                        className={row.other > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Other", row.other)}
+                        variant={getCategoryColor("proposal")}
+                        className={row.proposal > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Proposal", row.proposal)}
                       >
-                        {row.other}
+                        {row.proposal}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={getCategoryColor("logistics")}
+                        className={row.logistics > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Logistics", row.logistics)}
+                      >
+                        {row.logistics}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={getCategoryColor("acknowledgement")}
+                        className={row.acknowledgement > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Acknowledgement", row.acknowledgement)}
+                      >
+                        {row.acknowledgement}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={getCategoryColor("statusOfInquiry")}
+                        className={row.statusOfInquiry > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Status-of-Inquiry", row.statusOfInquiry)}
+                      >
+                        {row.statusOfInquiry}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={getCategoryColor("unclassified")}
+                        className={row.unclassified > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
+                        onClick={() => handleCategoryClick(row, "Unclassified", row.unclassified)}
+                      >
+                        {row.unclassified}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
@@ -411,7 +480,7 @@ const EmailAnalytics = () => {
                       <Badge variant="outline" className="text-xs">
                         {new Date(email.receivedAt).toLocaleString()}
                       </Badge>
-                      <Badge variant={getCategoryColor(email.category.toLowerCase())} className="text-xs">
+                      <Badge variant={getCategoryColor(email.category)} className="text-xs">
                         {email.category}
                       </Badge>
                       <Badge variant="red" className="text-xs">

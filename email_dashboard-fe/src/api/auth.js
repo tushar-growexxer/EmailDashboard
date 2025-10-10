@@ -1,0 +1,46 @@
+import BaseApiService from './base.js';
+
+/**
+ * Authentication API service
+ */
+class AuthApiService extends BaseApiService {
+  /**
+   * Login user with email and password
+   */
+  async login(credentials) {
+    return this.post('/auth/login', credentials);
+  }
+
+  /**
+   * Logout user
+   */
+  async logout() {
+    return this.post('/auth/logout');
+  }
+
+  /**
+   * Get current user profile
+   */
+  async getProfile() {
+    return this.get('/auth/profile');
+  }
+
+  /**
+   * Validate current token
+   */
+  async validateToken() {
+    return this.get('/auth/validate');
+  }
+
+  /**
+   * Refresh token (for future implementation)
+   */
+  async refreshToken() {
+    return this.post('/auth/refresh');
+  }
+}
+
+// Export singleton instance
+const authApi = new AuthApiService();
+export { AuthApiService };
+export default authApi;

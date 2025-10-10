@@ -46,7 +46,7 @@ export class AuthController {
 
       // Authenticate user
       const user = await userService.authenticateUser(email, password);
-      
+
       if (!user) {
         res.status(401).json({
           success: false,
@@ -62,12 +62,23 @@ export class AuthController {
         role: user.role,
       });
 
+      // Set httpOnly cookie with token
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        maxAge: 30 * 60 * 1000, // 30 minutes
+        path: '/',
+      };
+
+      res.cookie('auth_token', token, cookieOptions);
+
       logger.info(`User logged in successfully: ${user.email}`);
 
+      // Send user data (without token for security)
       res.status(200).json({
         success: true,
         message: 'Login successful',
-        token,
         user: {
           id: user.id,
           fullName: user.fullName,
@@ -91,10 +102,16 @@ export class AuthController {
    * @returns {void}
    */
   logout(_req: Request, res: Response): void {
-    // Since we're using JWT, logout is handled client-side by removing the token
-    // This endpoint is provided for consistency and potential future enhancements
+    // Clear the auth cookie
+    res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict' as const,
+      path: '/',
+    });
+
     logger.info('User logged out');
-    
+
     res.status(200).json({
       success: true,
       message: 'Logout successful',
@@ -118,7 +135,7 @@ export class AuthController {
       }
 
       const user = await userService.getUserById(req.user.userId);
-      
+
       if (!user) {
         res.status(404).json({
           success: false,
