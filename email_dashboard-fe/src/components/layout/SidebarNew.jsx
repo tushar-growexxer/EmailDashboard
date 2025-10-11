@@ -5,7 +5,7 @@ import SidebarHeader from "./SidebarHeader";
 import SidebarNavigation from "./SidebarNavigation";
 import SidebarFooter from "./SidebarFooter";
 
-const SidebarNew = ({ user = { name: "John Doe", email: "john@company.com", role: "Admin" } }) => {
+const SidebarNew = ({ user }) => {
   const { isSidebarOpen } = useSidebar();
 
   return (
@@ -19,7 +19,7 @@ const SidebarNew = ({ user = { name: "John Doe", email: "john@company.com", role
       <SidebarHeader user={user} />
 
       {/* Navigation */}
-      <SidebarNavigation userRole={user.role} />
+      <SidebarNavigation userRole={user?.role} />
 
       {/* Footer */}
       <SidebarFooter />

@@ -2,16 +2,18 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useSidebar } from "../../contexts/SidebarContext";
+import { useAuth } from "../../contexts/AuthContext";
 import SidebarNew from "./SidebarNew";
 import DashboardHeader from "./DashboardHeader";
 import Footer from "./Footer";
 
 const DashboardLayout = () => {
   const { isSidebarOpen } = useSidebar();
+  const { user } = useAuth();
 
   return (
     <div className="flex min-h-screen bg-background transition-colors duration-300">
-      <SidebarNew />
+      <SidebarNew user={user} />
       <div
         className={cn(
           "flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out",

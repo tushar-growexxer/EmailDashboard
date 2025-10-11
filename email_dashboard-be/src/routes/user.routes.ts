@@ -46,4 +46,11 @@ router.put('/:id', userController.updateUser.bind(userController));
  */
 router.delete('/:id', userController.deleteUser.bind(userController));
 
+/**
+ * @route   PATCH /api/users/:id/reset-password
+ * @desc    Reset user password (Admin only, does not require current password)
+ * @access  Private (Admin only)
+ */
+router.patch('/:id/reset-password', userController.resetUserPassword.bind(userController));
+
 export default router;

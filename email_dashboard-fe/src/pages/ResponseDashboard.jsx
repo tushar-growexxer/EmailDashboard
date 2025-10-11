@@ -101,7 +101,7 @@ const ResponseDashboard = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Unreplied Emails by Category</h1>

@@ -35,32 +35,27 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Initialize session management
+        const storedUser = authService.getUser();
+
+        // Initialize session management FIRST before any checks
+        // This ensures timestamps are set properly
         sessionManager.init({
           onWarning: handleSessionWarning,
           onExpired: handleSessionExpired,
         });
 
-        const storedUser = authService.getUser();
-
         if (storedUser) {
-          // Check if session is still valid (activity-based)
-          if (!sessionManager.isSessionExpired()) {
-            // For cookie-based auth, we assume user is authenticated if they have stored user data
-            // The actual token validation happens on API calls
-            setUser(storedUser);
-            setToken(null); // Tokens are in httpOnly cookies
-          } else {
-            // Session expired, clear everything
-            authService.clearAuth();
-            setUser(null);
-            setToken(null);
-          }
+          // For cookie-based auth, trust the stored user data
+          // The backend will validate the actual token on API calls
+          // Session expiry will be checked by the background interval
+          setUser(storedUser);
+          setToken(null); // Tokens are in httpOnly cookies
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         // Clear potentially invalid auth data
-        authService.clearAuth();
+        authService.clearLocalData(); // Only clears localStorage, doesn't call logout API
+        sessionManager.clearSession();
         setUser(null);
         setToken(null);
       } finally {
@@ -97,10 +92,10 @@ export const AuthProvider = ({ children }) => {
       message: 'Your session has expired. Please log in again.',
     });
 
-    // Clear auth state
+    // Clear auth state (only localStorage, session already expired on server)
     setUser(null);
     setToken(null);
-    authService.clearAuth();
+    authService.clearLocalData(); // Don't call logout API, session already expired
 
     // Don't navigate here - let the SessionWarning component handle it
   };
@@ -116,14 +111,14 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.login(email, password);
 
       if (result.success) {
-        // Initialize session tracking for new login
-        sessionManager.init({
-          onWarning: handleSessionWarning,
-          onExpired: handleSessionExpired,
-        });
-
         setUser(result.user);
         setToken(null); // Tokens are in httpOnly cookies
+        
+        // Session manager is already initialized in the useEffect
+        // Just update the activity timestamp for the new login
+        sessionManager.updateLastActivity();
+        sessionManager.setSessionStart();
+
         return { success: true };
       } else {
         return { success: false, message: result.message };
@@ -146,16 +141,23 @@ export const AuthProvider = ({ children }) => {
     setSessionWarning(null);
 
     try {
-      await authService.logout();
+      // Clear local state immediately
       setUser(null);
       setToken(null);
+      
+      // Call backend logout to clear cookies
+      await authService.logout();
 
-      // Cleanup session management
-      sessionManager.cleanup();
+      // Clear session management data
+      sessionManager.clearSession();
 
-      // Don't navigate here - let the component handle it
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout API fails, clear local state
+      setUser(null);
+      setToken(null);
+      authService.clearLocalData();
+      sessionManager.clearSession();
     } finally {
       setIsLoading(false);
     }

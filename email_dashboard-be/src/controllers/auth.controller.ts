@@ -60,6 +60,7 @@ export class AuthController {
         userId: user.id,
         email: user.email,
         role: user.role,
+        // department: user.department,
       });
 
       // Set httpOnly cookie with token
@@ -84,6 +85,8 @@ export class AuthController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
+          department: user.department,
+          lastLogin: user.lastLogin,
         },
       });
     } catch (error) {

@@ -1,17 +1,28 @@
-import React, { useState } from "react";
-import { User, Lock, Bell, Globe } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { User, Lock, Bell, Globe, Save, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Select } from "../components/ui/Select";
+import { ProfileSkeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/utils";
+import { useAuth } from "../contexts/AuthContext";
+import { authApi, userApi } from "../api/index";
+import { useNavigate } from "react-router-dom";
 
 const ProfileSettings = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user: currentUser, refreshProfile } = useAuth();
+  const [viewingUserId, setViewingUserId] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "John Doe",
-    email: "john.doe@company.com",
-    role: "Admin",
-    department: "Sales",
+    fullName: "",
+    email: "",
+    role: "",
+    department: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -19,138 +30,355 @@ const ProfileSettings = () => {
     inAppNotifications: true,
     language: "English",
   });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+
+  // Check if viewing another user's profile (from Settings page)
+  useEffect(() => {
+    if (location.state?.userId) {
+      setViewingUserId(location.state.userId);
+      fetchUserById(location.state.userId);
+    } else {
+      setViewingUserId(null);
+    }
+  }, [location.state]);
+
+  // Fetch current user's data
+  useEffect(() =>{
+    if (!viewingUserId && currentUser) {
+      setFormData({
+        fullName: currentUser.fullName || "",
+        email: currentUser.email || "",
+        role: currentUser.role || "",
+        department: currentUser.department || "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+        emailNotifications: true,
+        inAppNotifications: true,
+        language: "English",
+      });
+    }
+  }, [currentUser, viewingUserId]);
+
+  const fetchUserById = async (userId) => {
+    setIsLoadingUser(true);
+    setErrorMessage("");
+    try {
+      const result = await userApi.getUserById(userId);
+      if (result.success) {
+        setFormData({
+          fullName: result.user.fullName || "",
+          email: result.user.email || "",
+          role: result.user.role || "",
+          department: result.user.department || "",
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+          emailNotifications: true,
+          inAppNotifications: true,
+          language: "English",
+        });
+      } else {
+        setErrorMessage(result.message || "Failed to fetch user data");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to fetch user data");
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
+  const isViewingOtherUser = viewingUserId && viewingUserId !== currentUser?.id;
+  const isOwnProfile = !viewingUserId || viewingUserId === currentUser?.id;
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
-  const handleSaveProfile = () => {
-    console.log("Saving profile:", formData);
-    // Add save logic here
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const updateData = {
+        fullName: formData.fullName,
+        department: formData.department,
+      };
+
+      const result = await authApi.updateProfile(updateData);
+
+      if (result.success) {
+        setSuccessMessage("Profile updated successfully!");
+        setIsEditing(false);
+        // Refresh the user profile in context
+        await refreshProfile();
+      } else {
+        setErrorMessage(result.message || "Failed to update profile");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to update profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleChangePassword = () => {
-    console.log("Changing password");
-    // Add password change logic here
+  const handleChangePassword = async () => {
+    setIsChangingPassword(true);
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    // Validate passwords
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      setPasswordError("All password fields are required");
+      setIsChangingPassword(false);
+      return;
+    }
+
+    if (formData.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters long");
+      setIsChangingPassword(false);
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      setPasswordError("New passwords do not match");
+      setIsChangingPassword(false);
+      return;
+    }
+
+    try {
+      const result = await authApi.changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      });
+
+      if (result.success) {
+        setPasswordSuccess("Password changed successfully!");
+        // Clear password fields
+        setFormData({
+          ...formData,
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        setPasswordError(result.message || "Failed to change password");
+      }
+    } catch (error) {
+      setPasswordError(error.message || "Failed to change password. Please try again.");
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
+
+  const isAdmin = currentUser?.role === "admin";
+
+  if (isLoadingUser) {
+    return (
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+        <ProfileSkeleton />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-[1400px] mx-auto">
+    <div className="space-y-4 md:space-y-6 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold mb-2">Profile Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your personal information and preferences
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            {isViewingOtherUser && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => navigate("/settings")}
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Button>
+            )}
+            <h1 className="text-xl sm:text-2xl font-semibold">
+              {isViewingOtherUser ? "User Profile" : "Profile Settings"}
+            </h1>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            {isViewingOtherUser
+              ? "View user information"
+              : "Manage your personal information and preferences"}
+          </p>
+        </div>
       </div>
 
       {/* Personal Information */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            <CardTitle>Personal Information</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
+              <CardTitle className="text-base sm:text-lg">Personal Information</CardTitle>
+            </div>
+            {isAdmin && !isEditing && isOwnProfile && (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                Edit Profile
+              </Button>
+            )}
           </div>
-          <CardDescription>Update your personal details</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="space-y-4 p-4 sm:p-6">
+          {successMessage && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+              {successMessage}
+            </div>
+          )}
+          {errorMessage && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+              {errorMessage}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Full Name</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Full Name</label>
               <Input
                 value={formData.fullName}
+                disabled={!isEditing}
+                className={cn("text-sm sm:text-base", !isEditing && "bg-muted cursor-not-allowed")}
                 onChange={(e) => handleInputChange("fullName", e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Email Address</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Email Address</label>
               <Input
                 value={formData.email}
                 disabled
-                className="bg-muted cursor-not-allowed"
+                className="bg-muted cursor-not-allowed text-sm sm:text-base"
               />
-              <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Role</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Role</label>
               <div className="flex items-center h-10">
-                <Badge variant="default">{formData.role}</Badge>
+                <Badge variant="default" className="text-xs sm:text-sm">{formData.role}</Badge>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Department</label>
-              <Select
+              <label className="block text-xs sm:text-sm font-medium mb-2">Department</label>
+              <Input
                 value={formData.department}
+                disabled={!isEditing}
+                className={cn("text-sm sm:text-base", !isEditing && "bg-muted cursor-not-allowed")}
                 onChange={(e) => handleInputChange("department", e.target.value)}
-              >
-                <option>Sales</option>
-                <option>Support</option>
-                <option>Marketing</option>
-                <option>Operations</option>
-              </Select>
+              />
             </div>
           </div>
 
-          <div className="pt-4">
-            <Button onClick={handleSaveProfile}>Save Changes</Button>
-          </div>
+          {isEditing && (
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto text-sm">
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto text-sm"
+                onClick={() => {
+                  setIsEditing(false);
+                  setFormData({
+                    ...formData,
+                    fullName: currentUser?.fullName || "",
+                    department: currentUser?.department || "",
+                  });
+                  setErrorMessage("");
+                  setSuccessMessage("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Change Password */}
+      {/* Change Password - Only show for own profile */}
+      {isOwnProfile && (
       <Card>
-        <CardHeader>
+        <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
-            <CardTitle>Change Password</CardTitle>
+            <Lock className="h-4 w-4 sm:h-5 sm:w-5" />
+            <CardTitle className="text-base sm:text-lg">Change Password</CardTitle>
           </div>
-          <CardDescription>Update your password to keep your account secure</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Update your password to keep your account secure</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 p-4 sm:p-6">
+          {passwordSuccess && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+              {passwordSuccess}
+            </div>
+          )}
+          {passwordError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+              {passwordError}
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium mb-2">Current Password</label>
+            <label className="block text-xs sm:text-sm font-medium mb-2">Current Password</label>
             <Input
               type="password"
               value={formData.currentPassword}
               onChange={(e) => handleInputChange("currentPassword", e.target.value)}
               placeholder="Enter current password"
+              className="text-sm sm:text-base"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">New Password</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">New Password</label>
               <Input
                 type="password"
                 value={formData.newPassword}
                 onChange={(e) => handleInputChange("newPassword", e.target.value)}
                 placeholder="Enter new password"
+                className="text-sm sm:text-base"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Minimum 8 characters with complexity
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Confirm New Password</label>
               <Input
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                 placeholder="Confirm new password"
+                className="text-sm sm:text-base"
               />
             </div>
           </div>
 
           <div className="pt-4">
-            <Button onClick={handleChangePassword}>Update Password</Button>
+            <Button onClick={handleChangePassword} disabled={isChangingPassword} className="w-full sm:w-auto text-sm">
+              {isChangingPassword ? "Updating..." : "Update Password"}
+            </Button>
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Notification Preferences */}
+      {/* Notification Preferences
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -194,7 +422,6 @@ const ProfileSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Display Settings */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -228,7 +455,8 @@ const ProfileSettings = () => {
             <Button>Save Settings</Button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
+
     </div>
   );
 };

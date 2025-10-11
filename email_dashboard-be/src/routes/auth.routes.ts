@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authController } from '../controllers/auth.controller';
+import { userController } from '../controllers/user.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 
 /**
@@ -27,6 +28,20 @@ router.post('/logout', authController.logout.bind(authController));
  * @access  Private
  */
 router.get('/profile', authenticateToken, authController.getProfile.bind(authController));
+
+/**
+ * @route   PUT /api/auth/profile
+ * @desc    Update current user profile
+ * @access  Private
+ */
+router.put('/profile', authenticateToken, userController.updateProfile.bind(userController));
+
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Change current user password
+ * @access  Private
+ */
+router.post('/change-password', authenticateToken, userController.changePassword.bind(userController));
 
 /**
  * @route   GET /api/auth/validate

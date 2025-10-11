@@ -29,6 +29,11 @@ class BaseApiService {
     if (hasUser) {
       // The actual token is in httpOnly cookies, so we don't need to add it manually
       // The browser will automatically include the auth_token cookie
+    } else {
+      // Log warning if making authenticated request without user data
+      if (!endpoint.includes('/auth/login') && !endpoint.includes('/auth/validate')) {
+        console.warn('Making API request without user data in localStorage. User may need to log in.');
+      }
     }
 
     try {

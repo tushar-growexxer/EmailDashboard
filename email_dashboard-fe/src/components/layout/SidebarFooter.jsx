@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, AlertCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useSidebar } from "../../contexts/SidebarContext";
+import { useAuth } from "../../contexts/AuthContext";
 import Tooltip from "../ui/Tooltip";
 import {
   AlertDialog,
@@ -19,12 +20,26 @@ import {
 const SidebarFooter = () => {
   const navigate = useNavigate();
   const { isSidebarOpen } = useSidebar();
+  const { logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    // Add logout logic here
-    navigate("/login");
-    setShowLogoutModal(false);
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      // Call AuthContext logout to clear everything
+      await logout();
+      
+      // Close modal and navigate to login
+      setShowLogoutModal(false);
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Navigate anyway to ensure user is logged out
+      navigate("/login", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -70,9 +85,9 @@ const SidebarFooter = () => {
             <AlertDialogCancel onClick={() => setShowLogoutModal(false)}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} variant="destructive">
+            <AlertDialogAction onClick={handleLogout} variant="destructive" disabled={isLoggingOut}>
               <LogOut className="w-4 h-4" />
-              Logout
+              {isLoggingOut ? "Logging out..." : "Logout"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -80,7 +80,7 @@ const Tooltip = ({ children, content, side = "right", sideOffset = 12, delay = 2
       {isVisible && content && createPortal(
         <div
           className={cn(
-            "fixed z-[100] px-3 py-2 text-sm text-white bg-slate-900 dark:bg-slate-800 rounded-lg shadow-lg whitespace-nowrap animate-fade-in pointer-events-none",
+            "fixed z-[100] px-3 py-2 text-sm text-white bg-slate-900 dark:bg-slate-800 rounded-lg shadow-lg whitespace-nowrap pointer-events-none",
             getTransformClass()
           )}
           style={{

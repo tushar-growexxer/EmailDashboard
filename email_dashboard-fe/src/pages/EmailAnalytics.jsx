@@ -181,7 +181,7 @@ const EmailAnalytics = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-[1400px] mx-auto">
+    <div className="space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold mb-2">Email Analytics Dashboard</h1>

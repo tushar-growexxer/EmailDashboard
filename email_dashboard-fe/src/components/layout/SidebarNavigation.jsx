@@ -24,8 +24,8 @@ const navigationItems = [
 const SidebarNavigation = ({ userRole }) => {
   const items = [...navigationItems];
 
-  // Add Settings for admin only
-  if (userRole === "Admin") {
+  // Add Settings for admin only (case-insensitive check)
+  if (userRole && userRole.toLowerCase() === "admin") {
     items.push({
       icon: Settings,
       label: "Settings",

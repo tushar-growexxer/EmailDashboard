@@ -9,6 +9,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import Settings from "./pages/Settings";
 import SessionWarning from "./components/SessionWarning";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 function App() {
   return (
@@ -27,7 +28,11 @@ function App() {
           <Route path="/email-analytics" element={<EmailAnalytics />} />
           <Route path="/sentiment" element={<SentimentDashboard />} />
           <Route path="/profile" element={<ProfileSettings />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings" element={
+            <AdminRoute>
+              <Settings />
+            </AdminRoute>
+          } />
         </Route>
       </Routes>
     </Router>

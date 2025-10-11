@@ -10,6 +10,7 @@ export class SessionManager {
 
   static LAST_ACTIVITY_KEY = 'last_activity';
   static SESSION_WARNING_SHOWN_KEY = 'session_warning_shown';
+  static SESSION_START_KEY = 'session_start';
 
   static activityEvents = [
     'mousedown',
@@ -38,9 +39,12 @@ export class SessionManager {
       this.startActivityCheck();
     }
 
-    // Set initial activity timestamp only if we have a valid session
+    // Always set initial activity timestamp on init
+    // This ensures a fresh start for each login session
     if (this.hasValidSession()) {
       this.updateLastActivity();
+      this.setSessionStart();
+      console.log('Session initialized with timestamp:', new Date().toISOString());
     }
   }
 
@@ -50,6 +54,25 @@ export class SessionManager {
   static hasValidSession() {
     if (typeof window === 'undefined') return false;
     return !!localStorage.getItem('user');
+  }
+
+  /**
+   * Set session start time
+   */
+  static setSessionStart() {
+    if (typeof window !== 'undefined' && this.hasValidSession()) {
+      localStorage.setItem(this.SESSION_START_KEY, Date.now().toString());
+      console.log('Session start time set:', new Date().toISOString());
+    }
+  }
+
+  /**
+   * Get session start time
+   */
+  static getSessionStart() {
+    if (typeof window === 'undefined') return null;
+    const timestamp = localStorage.getItem(this.SESSION_START_KEY);
+    return timestamp ? parseInt(timestamp, 10) : null;
   }
 
   /**
@@ -92,6 +115,9 @@ export class SessionManager {
 
       // Clear warning flag when user is active
       localStorage.removeItem(this.SESSION_WARNING_SHOWN_KEY);
+
+      // Debug log (can be removed in production)
+      // console.log('Activity updated:', new Date(now).toISOString());
     }
   }
 
@@ -114,7 +140,9 @@ export class SessionManager {
     if (!lastActivity || !this.hasValidSession()) return true;
 
     const now = Date.now();
-    return (now - lastActivity) >= this.SESSION_TIMEOUT;
+    const elapsed = now - lastActivity;
+    console.log(`Session check - Elapsed: ${elapsed}ms, Timeout: ${this.SESSION_TIMEOUT}ms`);
+    return elapsed >= this.SESSION_TIMEOUT;
   }
 
   /**
@@ -126,7 +154,9 @@ export class SessionManager {
 
     const now = Date.now();
     const elapsed = now - lastActivity;
-    return Math.max(0, this.SESSION_TIMEOUT - elapsed);
+    const remaining = Math.max(0, this.SESSION_TIMEOUT - elapsed);
+    console.log(`Time until expiry: ${remaining}ms (${Math.floor(remaining / 60000)} minutes)`);
+    return remaining;
   }
 
   /**
@@ -138,7 +168,9 @@ export class SessionManager {
     const timeUntilExpiry = this.getTimeUntilExpiry();
     const warningShown = localStorage.getItem(this.SESSION_WARNING_SHOWN_KEY);
 
-    return timeUntilExpiry <= this.WARNING_TIME && !warningShown;
+    const shouldWarn = timeUntilExpiry <= this.WARNING_TIME && !warningShown;
+    console.log(`Should show warning: ${shouldWarn}, Time remaining: ${Math.floor(timeUntilExpiry / 60000)} minutes`);
+    return shouldWarn;
   }
 
   /**
@@ -178,6 +210,7 @@ export class SessionManager {
 
     if (this.warningCallback) {
       const minutesLeft = Math.ceil(this.getTimeUntilExpiry() / (60 * 1000));
+      console.log(`Session warning triggered - ${minutesLeft} minutes remaining`);
       this.warningCallback(minutesLeft);
     }
   }
@@ -186,6 +219,7 @@ export class SessionManager {
    * Handle session expired
    */
   static handleSessionExpired() {
+    console.log('Session expired');
     if (this.expiredCallback) {
       this.expiredCallback();
     }
@@ -205,6 +239,8 @@ export class SessionManager {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(this.LAST_ACTIVITY_KEY);
       localStorage.removeItem(this.SESSION_WARNING_SHOWN_KEY);
+      localStorage.removeItem(this.SESSION_START_KEY);
+      console.log('Session data cleared from localStorage');
     }
 
     if (this.checkInterval) {

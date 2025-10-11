@@ -63,7 +63,7 @@ const SentimentDashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-[1400px] mx-auto">
+    <div className="space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">

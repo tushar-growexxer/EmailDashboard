@@ -26,6 +26,20 @@ class AuthApiService extends BaseApiService {
   }
 
   /**
+   * Update current user profile
+   */
+  async updateProfile(profileData) {
+    return this.put('/auth/profile', profileData);
+  }
+
+  /**
+   * Change current user password
+   */
+  async changePassword(passwordData) {
+    return this.post('/auth/change-password', passwordData);
+  }
+
+  /**
    * Validate current token
    */
   async validateToken() {

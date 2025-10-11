@@ -12,6 +12,8 @@ export interface User {
   role: 'admin' | 'user';
   createdAt: Date;
   updatedAt?: Date;
+  department?: string;
+  lastLogin?: Date;
 }
 
 /**
@@ -22,6 +24,7 @@ export interface CreateUserData {
   email: string;
   password: string;
   role: 'admin' | 'user';
+  department: string;
 }
 
 /**
@@ -30,6 +33,7 @@ export interface CreateUserData {
 export interface UpdateUserData {
   fullName?: string;
   role?: 'admin' | 'user';
+  department?: string;
 }
 
 /**
@@ -74,8 +78,8 @@ export class UserModel {
       const nextId = await this.getNextId();
       logger.error(`Next available ID: ${nextId}`);
       const sql = `
-        INSERT INTO ${this.tableName} ("Code", "U_Email","Name","U_Role","U_Password","U_CreatedAt","U_UpdatedAt")
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO ${this.tableName} ("Code", "U_Email","Name","U_Role","U_Password","U_CreatedAt","U_UpdatedAt","U_Department","U_LastLogin")
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, CURRENT_TIMESTAMP)
       `;
 
       const params = [
@@ -84,6 +88,7 @@ export class UserModel {
         userData.fullName,
         userData.role,
         userData.password,
+        userData.department,
       ];
 
       // Execute INSERT
@@ -111,7 +116,7 @@ export class UserModel {
    */
   async findByEmail(email: string): Promise<User | null> {
     try {
-      const sql = `SELECT CAST("Code" AS INTEGER) as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt" FROM ${this.tableName} WHERE "U_Email" = ?`;
+      const sql = `SELECT CAST("Code" AS INTEGER) as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt","U_Department" as "department","U_LastLogin" as "lastLogin" FROM ${this.tableName} WHERE "U_Email" = ?`;
       const result = await db.preparedStatement(sql, [email]);
 
       logger.info(`Database query result for email ${email}:`, result);
@@ -134,7 +139,7 @@ export class UserModel {
    */
   async findById(id: number): Promise<User | null> {
     try {
-      const sql = `SELECT CAST("Code" AS INTEGER) as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt" FROM ${this.tableName} WHERE "Code" = ?`;
+      const sql = `SELECT CAST("Code" AS INTEGER) as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt","U_Department" as "department","U_LastLogin" as "lastLogin" FROM ${this.tableName} WHERE "Code" = ?`;
       const result = await db.preparedStatement(sql, [id]);
       
       return result.length > 0 ? (result[0] as User) : null;
@@ -151,7 +156,7 @@ export class UserModel {
   async findAll(): Promise<User[]> {
     try {
       const sql = `
-        SELECT "Code" as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt"
+        SELECT "Code" as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt","U_Department" as "department","U_LastLogin" as "lastLogin"
         FROM ${this.tableName} 
         ORDER BY "U_CreatedAt" DESC
       `;
@@ -183,6 +188,11 @@ export class UserModel {
       if (updateData.role !== undefined) {
         updateFields.push(`"U_Role" = ?`);
         params.push(updateData.role);
+      }
+
+      if (updateData.department !== undefined) {
+        updateFields.push(`"U_Department" = ?`);
+        params.push(updateData.department);
       }
 
       if (updateFields.length === 0) {

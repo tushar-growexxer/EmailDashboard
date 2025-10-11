@@ -4,15 +4,18 @@ import { Menu, PanelLeftClose, Sun, Moon } from "lucide-react";
 import { Avatar, AvatarFallback } from "../ui/Avatar";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSidebar } from "../../contexts/SidebarContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { cn } from "../../lib/utils";
 
-const DashboardHeader = ({ user = { name: "John Doe", role: "Admin" } }) => {
+const DashboardHeader = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { isSidebarOpen, toggleSidebar } = useSidebar();
+  const { user } = useAuth();
   const isDark = theme === "dark";
 
   const getInitials = (name) => {
+    if (!name) return "U";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -77,7 +80,7 @@ const DashboardHeader = ({ user = { name: "John Doe", role: "Admin" } }) => {
           >
             <Avatar className="w-10 h-10 border-2 border-border">
               <AvatarFallback className="bg-indigo-600 text-white text-sm">
-                {getInitials(user.name)}
+                {getInitials(user?.fullName || "User")}
               </AvatarFallback>
             </Avatar>
           </button>

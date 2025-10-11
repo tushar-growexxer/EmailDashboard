@@ -69,14 +69,28 @@ export class TokenManager {
   }
 
   /**
-   * Clear all authentication data
+   * Clear only local storage data (without calling logout API)
+   * Use this for cleaning up invalid/old sessions
    */
-  static clearAuth() {
+  static clearLocalData() {
+    this.removeUser();
+    this.removeRefreshToken();
+    // Also clear session_start that might be set by this manager
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('session_start');
+    }
+  }
+
+  /**
+   * Clear all authentication data (including server-side cookies)
+   * Use this for actual user logout
+   */
+  static async clearAuth() {
     this.removeUser();
     this.removeRefreshToken();
 
     // Clear cookies by calling logout endpoint
-    this.clearAuthCookies();
+    await this.clearAuthCookies();
   }
 
   /**

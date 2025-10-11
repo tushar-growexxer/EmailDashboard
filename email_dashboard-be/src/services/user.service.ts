@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { userModel, CreateUserData, UpdateUserData, User } from '../models/User';
+import { db } from '../config/database';
 import logger from '../config/logger';
 
 /**
@@ -210,6 +211,49 @@ export class UserService {
   }
 
   /**
+   * Change user password
+   * @param {number} userId - User ID
+   * @param {string} currentPassword - Current password
+   * @param {string} newPassword - New password
+   * @returns {Promise<boolean>} True if password changed successfully, false otherwise
+   */
+  async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      // Get user with password
+      const user = await userModel.findById(userId);
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Verify current password
+      const isPasswordValid = await this.comparePassword(currentPassword, user.password);
+      
+      if (!isPasswordValid) {
+        throw new Error('Current password is incorrect');
+      }
+
+      // Hash new password
+      const hashedPassword = await this.hashPassword(newPassword);
+
+      // Get database configuration
+      const config = db.getConfig();
+      const tableName = `"${config.schema}"."@${config.usersTable}"`;
+
+      // Update password in database
+      const sql = `UPDATE ${tableName} SET "U_Password" = ?, "U_UpdatedAt" = CURRENT_TIMESTAMP WHERE "Code" = ?`;
+      
+      await db.preparedStatement(sql, [hashedPassword, userId]);
+      
+      logger.info(`Password changed successfully for user ID: ${userId}`);
+      return true;
+    } catch (error) {
+      logger.error('Error at user service changing password:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get user by email (for authentication purposes)
    * @param {string} email - User email
    * @returns {Promise<User | null>} User object with password or null if not found
@@ -219,6 +263,46 @@ export class UserService {
       return await userModel.findByEmail(email);
     } catch (error) {
       logger.error('Error at user service getting user by email:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset user password (Admin only - does not require current password)
+   * @param {number} userId - User ID
+   * @param {string} newPassword - New password
+   * @returns {Promise<boolean>} True if password reset successfully
+   */
+  async resetUserPassword(userId: number, newPassword: string): Promise<boolean> {
+    try {
+      // Get user
+      const user = await userModel.findById(userId);
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Validate new password strength
+      if (newPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters long');
+      }
+
+      // Hash new password
+      const hashedPassword = await this.hashPassword(newPassword);
+
+      // Get database configuration
+      const config = db.getConfig();
+      const tableName = `"${config.schema}"."@${config.usersTable}"`;
+
+      // Update password in database
+      const sql = `UPDATE ${tableName} SET "U_Password" = ?, "U_UpdatedAt" = CURRENT_TIMESTAMP WHERE "Code" = ?`;
+      
+      await db.preparedStatement(sql, [hashedPassword, userId]);
+      
+      logger.info(`Password reset successfully for user ID: ${userId} by admin`);
+      return true;
+    } catch (error) {
+      logger.error('Error at user service resetting password:', error);
       throw error;
     }
   }

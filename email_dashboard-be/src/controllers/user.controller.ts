@@ -10,6 +10,7 @@ interface CreateUserRequest {
   email: string;
   password: string;
   role: 'admin' | 'user';
+  department: string;
 }
 
 /**
@@ -18,6 +19,30 @@ interface CreateUserRequest {
 interface UpdateUserRequest {
   fullName?: string;
   role?: 'admin' | 'user';
+  department?: string;
+}
+
+/**
+ * Interface for update profile request body (users can update their own profile)
+ */
+interface UpdateProfileRequest {
+  fullName?: string;
+  department?: string;
+}
+
+/**
+ * Interface for change password request body
+ */
+interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
+ * Interface for admin reset password request body
+ */
+interface ResetPasswordRequest {
+  newPassword: string;
 }
 
 /**
@@ -32,7 +57,7 @@ export class UserController {
    */
   async createUser(req: Request, res: Response): Promise<void> {
     try {
-      const { fullName, email, password, role }: CreateUserRequest = req.body;
+      const { fullName, email, password, role, department }: CreateUserRequest = req.body;
 
       // Validate request body
       if (!fullName || !email || !password || !role) {
@@ -66,6 +91,7 @@ export class UserController {
         email,
         password,
         role,
+        department,
       });
 
       res.status(201).json({
@@ -76,8 +102,10 @@ export class UserController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
+          department: user.department,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLogin: user.lastLogin,
         },
       });
     } catch (error) {
@@ -125,8 +153,10 @@ export class UserController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
+          department: user.department,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLogin: user.lastLogin,
         })),
       });
     } catch (error) {
@@ -173,8 +203,10 @@ export class UserController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
+          department: user.department,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLogin: user.lastLogin,
         },
       });
     } catch (error) {
@@ -233,8 +265,10 @@ export class UserController {
           fullName: user.fullName,
           email: user.email,
           role: user.role,
+          department: user.department,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          lastLogin: user.lastLogin,
         },
       });
     } catch (error) {
@@ -308,6 +342,248 @@ export class UserController {
       });
     } catch (error) {
       logger.error('Delete user error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Update current user's profile
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @returns {Promise<void>} Promise that resolves when profile is updated
+   */
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { fullName, department }: UpdateProfileRequest = req.body;
+
+      // Validate that at least one field is provided
+      if (!fullName && !department) {
+        res.status(400).json({
+          success: false,
+          message: 'At least one field (fullName or department) must be provided',
+        });
+        return;
+      }
+
+      const user = await userService.updateUser(req.user.userId, { fullName, department });
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          department: user.department,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          lastLogin: user.lastLogin,
+        },
+      });
+    } catch (error) {
+      logger.error('Update profile error:', error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          res.status(404).json({
+            success: false,
+            message: 'User not found',
+          });
+          return;
+        }
+
+        if (error.message.includes('Invalid') || error.message.includes('must be')) {
+          res.status(400).json({
+            success: false,
+            message: error.message,
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Change current user's password
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @returns {Promise<void>} Promise that resolves when password is changed
+   */
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { currentPassword, newPassword }: ChangePasswordRequest = req.body;
+
+      // Validate request body
+      if (!currentPassword || !newPassword) {
+        res.status(400).json({
+          success: false,
+          message: 'Current password and new password are required',
+        });
+        return;
+      }
+
+      // Validate new password strength
+      if (newPassword.length < 8) {
+        res.status(400).json({
+          success: false,
+          message: 'New password must be at least 8 characters long',
+        });
+        return;
+      }
+
+      // Verify current password and change to new password
+      const result = await userService.changePassword(
+        req.user.userId,
+        currentPassword,
+        newPassword
+      );
+
+      if (!result) {
+        res.status(400).json({
+          success: false,
+          message: 'Current password is incorrect',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Password changed successfully',
+      });
+    } catch (error) {
+      logger.error('Change password error:', error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          res.status(404).json({
+            success: false,
+            message: 'User not found',
+          });
+          return;
+        }
+
+        if (error.message.includes('Current password')) {
+          res.status(400).json({
+            success: false,
+            message: error.message,
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Reset user password (Admin only - does not require current password)
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @returns {Promise<void>} Promise that resolves when password is reset
+   */
+  async resetUserPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = parseInt(req.params.id);
+      const { newPassword }: ResetPasswordRequest = req.body;
+
+      if (isNaN(userId)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid user ID',
+        });
+        return;
+      }
+
+      // Validate request body
+      if (!newPassword) {
+        res.status(400).json({
+          success: false,
+          message: 'New password is required',
+        });
+        return;
+      }
+
+      // Validate new password strength
+      if (newPassword.length < 8) {
+        res.status(400).json({
+          success: false,
+          message: 'New password must be at least 8 characters long',
+        });
+        return;
+      }
+
+      // Prevent admin from resetting their own password this way
+      if (req.user && req.user.userId === userId) {
+        res.status(400).json({
+          success: false,
+          message: 'You cannot reset your own password. Please use the change password feature.',
+        });
+        return;
+      }
+
+      const result = await userService.resetUserPassword(userId, newPassword);
+
+      if (!result) {
+        res.status(400).json({
+          success: false,
+          message: 'Failed to reset password',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Password reset successfully',
+      });
+    } catch (error) {
+      logger.error('Reset password error:', error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          res.status(404).json({
+            success: false,
+            message: 'User not found',
+          });
+          return;
+        }
+
+        if (error.message.includes('Password must be')) {
+          res.status(400).json({
+            success: false,
+            message: error.message,
+          });
+          return;
+        }
+      }
+
       res.status(500).json({
         success: false,
         message: 'Internal server error',

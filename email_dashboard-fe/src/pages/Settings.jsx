@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Users, Settings as SettingsIcon, Bell, UserPlus, Edit, Trash2, Key } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Users, Settings as SettingsIcon, Bell, UserPlus, Edit, Trash2, Key, Eye, KeyRound } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -8,51 +9,56 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Modal, ModalClose, ModalContent, ModalFooter, ModalHeader, ModalTitle } from "../components/ui/Modal";
 import { Avatar, AvatarFallback } from "../components/ui/Avatar";
 import { Select } from "../components/ui/Select";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/utils";
-
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john.smith@company.com",
-    role: "Admin",
-    department: "Sales",
-    status: "Active",
-    createdDate: "2024-01-15",
-    lastLogin: "2024-01-20 10:30 AM",
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah.j@company.com",
-    role: "User",
-    department: "Support",
-    status: "Active",
-    createdDate: "2024-01-16",
-    lastLogin: "2024-01-20 09:15 AM",
-  },
-  {
-    id: 3,
-    name: "Mike Wilson",
-    email: "mike.w@company.com",
-    role: "User",
-    department: "Marketing",
-    status: "Active",
-    createdDate: "2024-01-17",
-    lastLogin: "2024-01-19 04:20 PM",
-  },
-];
+import { useAuth } from "../contexts/AuthContext";
+import { userApi } from "../api/index";
 
 const Settings = () => {
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("users");
   const [createUserModal, setCreateUserModal] = useState(false);
+  const [resetPasswordModal, setResetPasswordModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [resetPasswordError, setResetPasswordError] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     fullName: "",
     password: "",
-    role: "User",
+    role: "user",
     department: "Sales",
   });
+
+  useEffect(() => {
+    if (activeTab === "users") {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    setIsLoadingUsers(true);
+    setErrorMessage("");
+    try {
+      const result = await userApi.getAllUsers();
+      if (result.success) {
+        setUsers(result.users);
+      } else {
+        setErrorMessage(result.message || "Failed to fetch users");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to fetch users");
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   const tabs = [
     { id: "users", label: "User Management", icon: Users },
@@ -61,6 +67,7 @@ const Settings = () => {
   ];
 
   const getInitials = (name) => {
+    if (!name) return "U";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -68,21 +75,88 @@ const Settings = () => {
       .toUpperCase();
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const handleCreateUser = () => {
-    console.log("Creating user:", formData);
-    setCreateUserModal(false);
-    // Reset form
-    setFormData({
-      email: "",
-      fullName: "",
-      password: "",
-      role: "User",
-      department: "Sales",
-    });
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
+
+  const handleCreateUser = async () => {
+    setIsCreatingUser(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    // Validate form data
+    if (!formData.email || !formData.fullName || !formData.password) {
+      setErrorMessage("Email, full name, and password are required");
+      setIsCreatingUser(false);
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setErrorMessage("Password must be at least 8 characters long");
+      setIsCreatingUser(false);
+      return;
+    }
+
+    try {
+      const result = await userApi.createUser(formData);
+      if (result.success) {
+        setSuccessMessage("User created successfully!");
+        setCreateUserModal(false);
+        // Reset form
+        setFormData({
+          email: "",
+          fullName: "",
+          password: "",
+          role: "user",
+          department: "Sales",
+        });
+        // Refresh users list
+        fetchUsers();
+      } else {
+        setErrorMessage(result.message || "Failed to create user");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to create user. Please try again.");
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const handleViewUser = (userId) => {
+    // Navigate to the profile page with the user ID as state
+    navigate("/profile", { state: { userId } });
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to delete ${userName}?`)) {
+      return;
+    }
+
+    try {
+      const result = await userApi.deleteUser(userId);
+      if (result.success) {
+        setSuccessMessage("User deleted successfully!");
+        fetchUsers();
+      } else {
+        setErrorMessage(result.message || "Failed to delete user");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to delete user");
+    }
   };
 
   const generatePassword = () => {
@@ -94,32 +168,85 @@ const Settings = () => {
     setFormData({ ...formData, password });
   };
 
+  const generateResetPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(password);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser) return;
+
+    setIsResettingPassword(true);
+    setResetPasswordError("");
+
+    // Validate password
+    if (!newPassword) {
+      setResetPasswordError("Password is required");
+      setIsResettingPassword(false);
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setResetPasswordError("Password must be at least 8 characters long");
+      setIsResettingPassword(false);
+      return;
+    }
+
+    try {
+      const result = await userApi.resetUserPassword(selectedUser.id, newPassword);
+      if (result.success) {
+        setSuccessMessage(`Password reset successfully for ${selectedUser.fullName}!`);
+        setResetPasswordModal(false);
+        setSelectedUser(null);
+        setNewPassword("");
+      } else {
+        setResetPasswordError(result.message || "Failed to reset password");
+      }
+    } catch (error) {
+      setResetPasswordError(error.message || "Failed to reset password");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handleOpenResetPassword = (user) => {
+    setSelectedUser(user);
+    setNewPassword("");
+    setResetPasswordError("");
+    setResetPasswordModal(true);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-[1400px] mx-auto">
+    <div className="space-y-4 md:space-y-6 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold mb-2">Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-semibold mb-2">Settings</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Manage your application settings and preferences
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-border">
-        <div className="flex gap-4">
+      <div className="border-b border-border overflow-x-auto">
+        <div className="flex gap-2 sm:gap-4 min-w-max">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-3 border-b-2 transition-colors",
+                "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-b-2 transition-colors text-sm sm:text-base whitespace-nowrap",
                 activeTab === tab.id
                   ? "border-primary text-primary font-medium"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               <tab.icon className="h-4 w-4" />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
             </button>
           ))}
         </div>
@@ -135,70 +262,109 @@ const Settings = () => {
                 Add, edit, and manage user accounts
               </p>
             </div>
-            <Button onClick={() => setCreateUserModal(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add New User
-            </Button>
+            {currentUser?.role === "admin" && (
+              <Button onClick={() => setCreateUserModal(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add New User
+              </Button>
+            )}
           </div>
 
+          {successMessage && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+              {successMessage}
+            </div>
+          )}
+          {errorMessage && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+              {errorMessage}
+            </div>
+          )}
+
           <Card>
-            <CardContent className="p-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                              {getInitials(user.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === "Admin" ? "default" : "secondary"}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.department}</TableCell>
-                      <TableCell>
-                        <Badge variant="green">{user.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {user.lastLogin}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Key className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="p-4 sm:p-6 overflow-x-auto">
+              {isLoadingUsers ? (
+                <TableSkeleton rows={5} columns={5} />
+              ) : users.length === 0 ? (
+                <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">No users found</div>
+              ) : (
+                <div className="min-w-[640px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[200px]">User</TableHead>
+                        <TableHead className="min-w-[80px]">Role</TableHead>
+                        <TableHead className="min-w-[100px]">Department</TableHead>
+                        <TableHead className="min-w-[140px]">Last Login</TableHead>
+                        <TableHead className="text-right min-w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                  {getInitials(user.fullName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate text-sm sm:text-base">{user.fullName}</p>
+                                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === "admin" ? "default" : "secondary"} className="text-xs">
+                              {user.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{user.department || "N/A"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm text-muted-foreground">
+                            {formatDate(user.lastLogin)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1 sm:gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleViewUser(user.id)}
+                                title="View Profile"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {currentUser?.role === "admin" && currentUser?.id !== user.id && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-blue-600 dark:text-blue-400"
+                                    onClick={() => handleOpenResetPassword(user)}
+                                    title="Reset Password"
+                                  >
+                                    <KeyRound className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive"
+                                    onClick={() => handleDeleteUser(user.id, user.fullName)}
+                                    title="Delete User"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -283,59 +449,64 @@ const Settings = () => {
       <Modal open={createUserModal} onClose={() => setCreateUserModal(false)}>
         <ModalClose onClose={() => setCreateUserModal(false)} />
         <ModalHeader>
-          <ModalTitle>Create New User</ModalTitle>
+          <ModalTitle className="text-base sm:text-lg">Create New User</ModalTitle>
         </ModalHeader>
-        <ModalContent>
+        <ModalContent className="max-h-[70vh] overflow-y-auto">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Email Address *</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Email Address *</label>
               <Input
                 type="email"
                 placeholder="user@company.com"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
+                className="text-sm sm:text-base"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 User will login with username part only
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Full Name *</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Full Name *</label>
               <Input
                 placeholder="John Doe"
                 value={formData.fullName}
                 onChange={(e) => handleInputChange("fullName", e.target.value)}
+                className="text-sm sm:text-base"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Initial Password *</label>
-              <div className="flex gap-2">
+              <label className="block text-xs sm:text-sm font-medium mb-2">Initial Password *</label>
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   type="password"
                   placeholder="Enter secure password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
+                  className="flex-1 text-sm sm:text-base"
                 />
-                <Button variant="outline" onClick={generatePassword}>
+                <Button variant="outline" onClick={generatePassword} className="text-sm whitespace-nowrap">
                   Generate
                 </Button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Role</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Role</label>
               <Select
                 value={formData.role}
                 onChange={(e) => handleInputChange("role", e.target.value)}
+                className="text-sm sm:text-base"
               >
-                <option>User</option>
-                <option>Admin</option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Department</label>
+              <label className="block text-xs sm:text-sm font-medium mb-2">Department</label>
               <Select
                 value={formData.department}
                 onChange={(e) => handleInputChange("department", e.target.value)}
+                className="text-sm sm:text-base"
               >
                 <option>Sales</option>
                 <option>Support</option>
@@ -345,11 +516,82 @@ const Settings = () => {
             </div>
           </div>
         </ModalContent>
-        <ModalFooter>
-          <Button variant="ghost" onClick={() => setCreateUserModal(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreateUser}>Create User</Button>
+        <ModalFooter className="flex-col sm:flex-row gap-2">
+          {errorMessage && (
+            <div className="w-full text-xs sm:text-sm text-red-600 dark:text-red-400">
+              {errorMessage}
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:ml-auto">
+            <Button variant="ghost" onClick={() => {
+              setCreateUserModal(false);
+              setErrorMessage("");
+              setSuccessMessage("");
+            }} className="w-full sm:w-auto text-sm">
+              Cancel
+            </Button>
+            <Button onClick={handleCreateUser} disabled={isCreatingUser} className="w-full sm:w-auto text-sm">
+              {isCreatingUser ? "Creating..." : "Create User"}
+            </Button>
+          </div>
+        </ModalFooter>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal open={resetPasswordModal} onClose={() => setResetPasswordModal(false)}>
+        <ModalClose onClose={() => setResetPasswordModal(false)} />
+        <ModalHeader>
+          <ModalTitle className="text-base sm:text-lg">Reset Password</ModalTitle>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Reset password for <span className="font-semibold text-foreground">{selectedUser?.fullName}</span>
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium mb-2">New Password *</label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="text"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    setResetPasswordError("");
+                  }}
+                  className="flex-1 text-sm sm:text-base"
+                />
+                <Button variant="outline" onClick={generateResetPassword} className="text-sm whitespace-nowrap">
+                  Generate
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Password must be at least 8 characters long
+              </p>
+            </div>
+          </div>
+        </ModalContent>
+        <ModalFooter className="flex-col sm:flex-row gap-2">
+          {resetPasswordError && (
+            <div className="w-full text-xs sm:text-sm text-red-600 dark:text-red-400">
+              {resetPasswordError}
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:ml-auto">
+            <Button variant="ghost" onClick={() => {
+              setResetPasswordModal(false);
+              setSelectedUser(null);
+              setNewPassword("");
+              setResetPasswordError("");
+            }} className="w-full sm:w-auto text-sm">
+              Cancel
+            </Button>
+            <Button onClick={handleResetPassword} disabled={isResettingPassword} className="w-full sm:w-auto text-sm">
+              {isResettingPassword ? "Resetting..." : "Reset Password"}
+            </Button>
+          </div>
         </ModalFooter>
       </Modal>
     </div>

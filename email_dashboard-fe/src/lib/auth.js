@@ -3,6 +3,7 @@ import { tokenManager } from './tokenManager.js';
 
 /**
  * Authentication service for cookie-based login/logout operations
+ * Note: No user data is stored locally - authentication state is determined by API calls
  */
 export class AuthService {
   /**
@@ -17,13 +18,15 @@ export class AuthService {
       });
 
       if (response.success) {
-        // Store user data in localStorage (tokens are in httpOnly cookies)
+        // Store user data in localStorage for session management
         tokenManager.setUser(response.user);
+        
+        // Store session start time for activity tracking
         tokenManager.setSessionStart();
 
         return {
           success: true,
-          user: response.user,
+          user: response.user, // Return user data for immediate UI update
         };
       } else {
         return {
@@ -48,8 +51,8 @@ export class AuthService {
       // Call logout endpoint to clear httpOnly cookies
       await authApi.logout();
 
-      // Clear local storage
-      tokenManager.clearAuth();
+      // Clear local storage only (API already cleared cookies)
+      tokenManager.clearLocalData();
 
       return {
         success: true,
@@ -57,7 +60,7 @@ export class AuthService {
       };
     } catch (error) {
       // Even if the API call fails, we should clear local storage
-      tokenManager.clearAuth();
+      tokenManager.clearLocalData();
 
       return {
         success: true,
@@ -74,8 +77,8 @@ export class AuthService {
       const response = await authApi.getProfile();
 
       if (response.success) {
-        // Update stored user data
-        tokenManager.setUser(response.user);
+        // Update session activity
+        tokenManager.setSessionStart();
 
         return {
           success: true,
@@ -104,26 +107,32 @@ export class AuthService {
       const response = await authApi.validateToken();
 
       if (response.success) {
-        // Update user data if needed
-        if (response.user) {
-          tokenManager.setUser(response.user);
-        }
+        // Update session activity
+        tokenManager.setSessionStart();
 
         return {
           success: true,
           user: response.user,
         };
       } else {
-        // Clear local data if validation fails
-        tokenManager.clearAuth();
+        // Expected when no valid authentication exists
         return {
           success: false,
           message: response.message,
         };
       }
     } catch (error) {
-      // Clear local data if validation fails
-      tokenManager.clearAuth();
+      // Expected when no cookies are present or authentication fails
+      if (error.message && error.message.includes('401')) {
+        // Authentication not available (no cookies) - this is normal
+        return {
+          success: false,
+          message: 'No authentication available',
+        };
+      }
+
+      // Other errors (network, server down, etc.)
+      console.error('Auth validation error:', error);
       return {
         success: false,
         message: error.message || 'Authentication validation failed',
@@ -132,31 +141,38 @@ export class AuthService {
   }
 
   /**
-   * Get stored user data
+   * Get session time until expiry
+   */
+  getSessionTimeUntilExpiry() {
+    return tokenManager.getSessionTimeUntilExpiry();
+  }
+
+  /**
+   * Get stored user data from localStorage
    */
   getUser() {
     return tokenManager.getUser();
   }
 
   /**
-   * Check if user is authenticated (has user data)
+   * Store user data in localStorage
    */
-  isAuthenticated() {
-    return tokenManager.isAuthenticated();
+  setUser(user) {
+    tokenManager.setUser(user);
   }
 
   /**
-   * Clear all authentication data
+   * Clear only local storage data (without calling logout API)
    */
-  clearAuth() {
-    tokenManager.clearAuth();
+  clearLocalData() {
+    tokenManager.clearLocalData();
   }
 
   /**
-   * Get session time until expiry
+   * Clear all authentication data (including server-side cookies)
    */
-  getSessionTimeUntilExpiry() {
-    return tokenManager.getSessionTimeUntilExpiry();
+  async clearAuth() {
+    await tokenManager.clearAuth();
   }
 }
 

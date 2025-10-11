@@ -7,7 +7,7 @@ const AlertDialog = ({ open, onClose, children }) => {
   if (!open) return null;
 
   const dialog = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay - Blurs everything behind */}
       <div
         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md"

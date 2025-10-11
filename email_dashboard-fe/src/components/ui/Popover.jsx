@@ -72,7 +72,7 @@ const PopoverContent = ({ children, className, align = "center" }) => {
     <div
       ref={contentRef}
       className={cn(
-        "absolute top-full mt-2 z-50 rounded-lg border border-border bg-card shadow-lg animate-fade-in",
+        "absolute top-full mt-2 z-50 rounded-lg border border-border bg-card shadow-lg",
         alignClasses[align],
         className
       )}
