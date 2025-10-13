@@ -1,9 +1,9 @@
 import React from "react";
 import { Mail, Phone, MapPin, Globe } from "lucide-react";
-
+import { useAuth } from "../../contexts/AuthContext";
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-
+  const { user } = useAuth();
   return (
     <footer className="bg-card border-t border-border mt-12 transition-colors duration-300">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -70,16 +70,16 @@ const Footer = () => {
                   Sentiment Analysis
                 </a>
               </li>
-              <li>
+              {user?.role === "admin" && (<li>
                 <a href="/settings" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Settings
                 </a>
-              </li>
+              </li>)}
             </ul>
           </div>
 
           {/* Resources */}
-          <div>
+          {/* <div>
             <h4 className="font-semibold text-slate-900 dark:text-slate-50 mb-4">Resources</h4>
             <ul className="space-y-2">
               <li>
@@ -103,7 +103,7 @@ const Footer = () => {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Contact */}
           <div>
@@ -111,11 +111,17 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <Mail className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                <a href="mailto:support@emaildashboard.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                  support@emaildashboard.com
+                <a href="mailto:sap2@matangiindustries.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                  sap2@matangiindustries.com
                 </a>
               </li>
               <li className="flex items-start gap-2">
+                <Mail className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                <a href="mailto:sap2@matangiindustries.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                  sap@matangiindustries.com
+                </a>
+              </li>
+              {/* <li className="flex items-start gap-2">
                 <Phone className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
                 <a href="tel:+1234567890" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                   +1 (234) 567-890
@@ -133,7 +139,7 @@ const Footer = () => {
                 <a href="https://emaildashboard.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                   www.emaildashboard.com
                 </a>
-              </li>
+              </li> */}
             </ul>
           </div>
         </div>
@@ -141,9 +147,9 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            © {currentYear} Email Dashboard. All rights reserved.
+            © {currentYear} Matangi Industries LLP. All rights reserved.
           </p>
-          <div className="flex gap-6">
+          {/* <div className="flex gap-6">
             <a href="#" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
               Privacy Policy
             </a>
@@ -153,7 +159,7 @@ const Footer = () => {
             <a href="#" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
               Cookie Policy
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>

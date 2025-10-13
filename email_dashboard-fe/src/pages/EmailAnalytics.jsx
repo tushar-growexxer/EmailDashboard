@@ -197,7 +197,6 @@ const EmailAnalytics = () => {
       <FilterSection
         onApplyFilters={(filters) => console.log("Filters applied:", filters)}
         onReset={(filters) => console.log("Filters reset:", filters)}
-        onExport={() => console.log("Export clicked")}
       />
 
       

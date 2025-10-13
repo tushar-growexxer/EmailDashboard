@@ -15,7 +15,7 @@ const BusinessTypeFilter = ({ value = "All", onChange, className }) => {
             className={cn(
               "flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all",
               value === type
-                ? "bg-background shadow-sm text-foreground"
+                ? "bg-background shadow-sm text-foreground bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
             type="button"

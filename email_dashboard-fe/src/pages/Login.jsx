@@ -17,6 +17,7 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const currentYear = new Date().getFullYear();
 
   // Get the page the user was trying to access before being redirected to login
   const from = location.state?.from?.pathname || "/dashboard";
@@ -66,7 +67,6 @@ const Login = () => {
             <Mail className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold">Email Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Management Portal</p>
         </div>
 
         {/* Login Card */}
@@ -79,14 +79,14 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             {/* Show redirect message if user was redirected from a protected route */}
-            {location.state?.from && (
+            {/* {location.state?.from && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center gap-2 text-blue-700">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span className="text-sm">
                   Please log in to access <strong>{location.state.from.pathname}</strong>
                 </span>
               </div>
-            )}
+            )} */}
 
             {/* Error Message */}
             {error && (
@@ -179,7 +179,7 @@ const Login = () => {
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          © 2024 Your Company. All rights reserved.
+          © {currentYear} Matangi Industries LLP. All rights reserved.
         </p>
       </div>
     </div>

@@ -60,6 +60,13 @@ const Settings = () => {
     }
   };
 
+  const departments = [
+    { id: "sales", label: "Sales" },
+    { id: "operations", label: "Operations" },
+    { id: "management", label: "Management" },
+    { id: "SAP", label: "SAP" },
+  ];
+
   const tabs = [
     { id: "users", label: "User Management", icon: Users },
     { id: "email", label: "Email Configuration", icon: SettingsIcon },
@@ -508,10 +515,9 @@ const Settings = () => {
                 onChange={(e) => handleInputChange("department", e.target.value)}
                 className="text-sm sm:text-base"
               >
-                <option>Sales</option>
-                <option>Support</option>
-                <option>Marketing</option>
-                <option>Operations</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>{department.label}</option>
+                ))}
               </Select>
             </div>
           </div>

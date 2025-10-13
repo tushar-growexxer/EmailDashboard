@@ -76,10 +76,10 @@ const FilterSection = ({ onApplyFilters, onReset, onExport }) => {
               Reset
             </Button>
           </div>
-          <Button variant="secondary" onClick={onExport}>
+          {/* <Button variant="secondary" onClick={onExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
-          </Button>
+          </Button> */}
         </div>
       </div>
     </Card>

@@ -119,12 +119,6 @@ export class UserModel {
       const sql = `SELECT CAST("Code" AS INTEGER) as "id", "U_Email" as "email", "Name" as "fullName", "U_Role" as "role", "U_Password" as "password", "U_CreatedAt" as "createdAt", "U_UpdatedAt" as "updatedAt","U_Department" as "department","U_LastLogin" as "lastLogin" FROM ${this.tableName} WHERE "U_Email" = ?`;
       const result = await db.preparedStatement(sql, [email]);
 
-      logger.info(`Database query result for email ${email}:`, result);
-      if (result.length > 0) {
-        logger.info(`First result keys:`, Object.keys(result[0]));
-        logger.info(`First result values:`, result[0]);
-      }
-
       return result.length > 0 ? (result[0] as User) : null;
     } catch (error) {
       logger.error('Error finding user by email:', error);
