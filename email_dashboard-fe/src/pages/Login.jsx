@@ -20,7 +20,7 @@ const Login = () => {
   const currentYear = new Date().getFullYear();
 
   // Get the page the user was trying to access before being redirected to login
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = location.state?.from?.pathname || "/email-analytics";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,21 +56,23 @@ const Login = () => {
   };
 
   return (
-    <div className="light min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 dark:opacity-10"></div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary shadow-lg mb-4">
-            <Mail className="h-8 w-8 text-primary-foreground" />
-          </div>
+        <div className="flex items-center justify-center mb-8 space-x-4">
+          <img
+            src="/src/assets/matangi-logo.png"
+            alt="Matangi Logo"
+            className="h-16 w-auto"
+          />
           <h1 className="text-3xl font-bold">Email Dashboard</h1>
         </div>
 
         {/* Login Card */}
-        <Card className="shadow-2xl backdrop-blur-sm bg-white/95 animate-scale-up">
+        <Card className="shadow-2xl backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 animate-scale-up">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Sign In</CardTitle>
             <CardDescription>

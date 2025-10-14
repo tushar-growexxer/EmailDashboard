@@ -87,9 +87,6 @@ const SentimentDashboard = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
                   <p className="text-3xl font-bold mt-2">{stat.value}</p>
-                  <p className={cn("text-sm font-medium mt-1", stat.color)}>
-                    {stat.label}
-                  </p>
                 </div>
                 <div className={cn("p-3 rounded-full bg-muted", stat.color)}>
                   <stat.icon className="h-6 w-6" />

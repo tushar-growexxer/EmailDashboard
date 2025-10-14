@@ -123,22 +123,22 @@ const summaryStats = [
     trendUp: true,
     color: "text-red-600",
   },
-  {
-    title: "Avg Response Time",
-    value: "3.2 days",
-    icon: Clock,
-    trend: "-8%",
-    trendUp: false,
-    color: "text-orange-600",
-  },
-  {
-    title: "SLA Compliance",
-    value: "78%",
-    icon: CheckCircle,
-    trend: "+3%",
-    trendUp: true,
-    color: "text-green-600",
-  },
+  // {
+  //   title: "Avg Response Time",
+  //   value: "3.2 days",
+  //   icon: Clock,
+  //   trend: "-8%",
+  //   trendUp: false,
+  //   color: "text-orange-600",
+  // },
+  // {
+  //   title: "SLA Compliance",
+  //   value: "78%",
+  //   icon: CheckCircle,
+  //   trend: "+3%",
+  //   trendUp: true,
+  //   color: "text-green-600",
+  // },
 ];
 
 const EmailAnalytics = () => {
@@ -192,13 +192,6 @@ const EmailAnalytics = () => {
           Last refreshed: Today at 7:00 AM
         </p>
       </div>
-
-      {/* Shared Filters */}
-      <FilterSection
-        onApplyFilters={(filters) => console.log("Filters applied:", filters)}
-        onReset={(filters) => console.log("Filters reset:", filters)}
-      />
-
       
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -209,19 +202,6 @@ const EmailAnalytics = () => {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
                     <p className="text-3xl font-bold mt-2">{stat.value}</p>
-                    <div className="flex items-center gap-1 mt-2">
-                      {stat.trendUp ? (
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                      )}
-                      <span className={cn(
-                        "text-sm font-medium",
-                        stat.trendUp ? "text-green-600" : "text-red-600"
-                      )}>
-                        {stat.trend}
-                      </span>
-                    </div>
                   </div>
                   <div className={cn("p-3 rounded-full bg-muted", stat.color)}>
                     <stat.icon className="h-6 w-6" />
@@ -434,11 +414,6 @@ const EmailAnalytics = () => {
                     <TableCell className="text-center py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
                         <span className="font-bold text-lg">{row.total}</span>
-                        {row.trend === "up" ? (
-                          <TrendingUp className="h-4 w-4 text-red-600" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-green-600" />
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>

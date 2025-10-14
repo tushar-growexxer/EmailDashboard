@@ -8,8 +8,9 @@ import SentimentDashboard from "./pages/SentimentDashboard";
 import ProfileSettings from "./pages/ProfileSettings";
 import Settings from "./pages/Settings";
 import SessionWarning from "./components/SessionWarning";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminRoute from "./components/AdminRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import AdminRoute from "./routes/AdminRoute";
+import CatchAllRoute from "./routes/CatchAllRoute";
 
 function App() {
   return (
@@ -24,7 +25,7 @@ function App() {
             <DashboardLayout />
           </ProtectedRoute>
         }>
-          <Route path="/dashboard" element={<Home />} />
+          {/* <Route path="/dashboard" element={<Home />} /> */}
           <Route path="/email-analytics" element={<EmailAnalytics />} />
           <Route path="/sentiment" element={<SentimentDashboard />} />
           <Route path="/profile" element={<ProfileSettings />} />
@@ -34,6 +35,9 @@ function App() {
             </AdminRoute>
           } />
         </Route>
+
+        {/* Catch-all route for undefined endpoints */}
+        <Route path="*" element={<CatchAllRoute />} />
       </Routes>
     </Router>
   );

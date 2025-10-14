@@ -11,12 +11,15 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                <Mail className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="font-bold text-lg text-foreground">Email Dashboard</h3>
-            </div>
+          <div className="flex items-center gap-2 mb-4">
+            <img
+              src="/src/assets/matangi-logo.png"
+              alt="Matangi Logo"
+              className="h-10 w-auto"
+            />
+            <h3 className="font-bold text-lg text-foreground">Email Dashboard</h3>
+          </div>
+
             <p className="text-sm text-muted-foreground mb-4">
               Comprehensive email management and analytics platform for modern businesses.
             </p>
@@ -55,11 +58,6 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
             <ul className="space-y-2">
-              <li>
-                <a href="/dashboard" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Home
-                </a>
-              </li>
               <li>
                 <a href="/email-analytics" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Email Analytics
