@@ -17,7 +17,7 @@ const DashboardLayout = () => {
       <div
         className={cn(
           "flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "ml-[280px]" : "ml-[72px]"
+          isSidebarOpen ? "ml-[230px]" : "ml-[72px]"
         )}
       >
         <DashboardHeader />

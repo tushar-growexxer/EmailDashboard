@@ -44,7 +44,6 @@ export class SessionManager {
     if (this.hasValidSession()) {
       this.updateLastActivity();
       this.setSessionStart();
-      console.log('Session initialized with timestamp:', new Date().toISOString());
     }
   }
 
@@ -62,7 +61,6 @@ export class SessionManager {
   static setSessionStart() {
     if (typeof window !== 'undefined' && this.hasValidSession()) {
       localStorage.setItem(this.SESSION_START_KEY, Date.now().toString());
-      console.log('Session start time set:', new Date().toISOString());
     }
   }
 

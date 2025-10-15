@@ -56,7 +56,7 @@ const SentimentDashboard = () => {
     {
       title: "Customers Analyzed",
       value: "10",
-      label: "Top by volume",
+      label: "Top by value",
       icon: Users,
       color: "text-blue-600",
     },
@@ -71,7 +71,7 @@ const SentimentDashboard = () => {
           <Badge variant="purple">Top 10</Badge>
         </div>
         <p className="text-muted-foreground">
-          Sentiment trends over time for top 10 customers (by volume from SAP)
+          Sentiment trends over time for top 10 customers (by value from SAP)
         </p>
         <p className="text-sm text-muted-foreground mt-2">
           Last refreshed: Today at 7:00 AM
@@ -79,7 +79,7 @@ const SentimentDashboard = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {summaryStats.map((stat, index) => (
           <Card key={index} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
@@ -95,7 +95,7 @@ const SentimentDashboard = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
         {/* Left Panel - Filters and Legend */}
@@ -114,7 +114,7 @@ const SentimentDashboard = () => {
                   onChange={(e) => setSelectedCustomer(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Showing top 10 by volume
+                  Showing top 10 by value
                 </p>
               </div>
 

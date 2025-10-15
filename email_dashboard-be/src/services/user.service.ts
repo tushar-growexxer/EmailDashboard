@@ -199,10 +199,20 @@ export class UserService {
         return null;
       }
 
+      // Update last login timestamp
+      await userModel.updateLastLogin(user.id);
+
+      // Get updated user data with new lastLogin timestamp
+      const updatedUser = await userModel.findByEmail(email);
+
+      if (!updatedUser) {
+        return null;
+      }
+
       // Remove password from returned user object
-      const { password: _, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = updatedUser;
       
-      logger.info(`User authenticated successfully: ${user.email}`);
+      logger.info(`User authenticated successfully: ${updatedUser.email}`);
       return userWithoutPassword as User;
     } catch (error) {
       logger.error('Error at user service authenticating user:', error);

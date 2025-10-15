@@ -410,7 +410,7 @@
   },
   "dashboard_3_sentiment": {
     "title": "Customer Sentiment Analysis",
-    "subtitle": "Sentiment trends over time for top 10 customers (by volume from SAP)",
+    "subtitle": "Sentiment trends over time for top 10 customers (by value from SAP)",
     "layout": "chart_focused_with_left_panel",
     "left_panel": {
       "width": "320px",

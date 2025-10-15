@@ -265,6 +265,22 @@ export class UserModel {
       throw error;
     }
   }
+
+  /**
+   * Update last login timestamp for a user
+   * @param {number} id - User ID to update
+   * @returns {Promise<void>}
+   */
+  async updateLastLogin(id: number): Promise<void> {
+    try {
+      const sql = `UPDATE ${this.tableName} SET "U_LastLogin" = CURRENT_TIMESTAMP WHERE "Code" = ?`;
+      await db.preparedStatement(sql, [id]);
+      logger.info(`Last login updated for user ID: ${id}`);
+    } catch (error) {
+      logger.error('Error updating last login:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

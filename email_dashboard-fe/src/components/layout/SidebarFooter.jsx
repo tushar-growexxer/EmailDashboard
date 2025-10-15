@@ -5,17 +5,7 @@ import { cn } from "../../lib/utils";
 import { useSidebar } from "../../contexts/SidebarContext";
 import { useAuth } from "../../contexts/AuthContext";
 import Tooltip from "../ui/Tooltip";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogIcon,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "../ui/AlertDialog";
+import { ConfirmDialog } from "../ui/Dialog";
 
 const SidebarFooter = () => {
   const navigate = useNavigate();
@@ -72,26 +62,31 @@ const SidebarFooter = () => {
       </div>
 
       {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutModal} onClose={() => setShowLogoutModal(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogIcon icon={AlertCircle} />
-            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to logout? You'll need to sign in again to access the dashboard.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowLogoutModal(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} variant="destructive" disabled={isLoggingOut}>
-              <LogOut className="w-4 h-4" />
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={showLogoutModal}
+        onOpenChange={setShowLogoutModal}
+        title="Confirm Logout"
+        description={
+        <>
+          Are you sure you want to logout? 
+          <br />
+          You'll need to sign in again to access the dashboard.
+        </>
+          }
+        icon={AlertCircle}
+        iconClassName="bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500"
+        confirmText={
+          <>
+            <LogOut className="w-4 h-4" />
+            {isLoggingOut ? "Logging out..." : "Logout"}
+          </>
+        }
+        cancelText="Cancel"
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        variant="destructive"
+        isLoading={isLoggingOut}
+      />
     </>
   );
 };

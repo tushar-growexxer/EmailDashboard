@@ -1,115 +1,221 @@
 import React, { useState } from "react";
-import { Mail, ExternalLink, Check, AlertTriangle, Clock, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Mail, Clock, AlertTriangle, ExternalLink, Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/Table";
-import { Modal, ModalClose, ModalContent, ModalDescription, ModalHeader, ModalTitle } from "../components/ui/Modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogClose } from "../components/ui/Dialog";
 import { Avatar, AvatarFallback } from "../components/ui/Avatar";
+import { Select } from "../components/ui/Select";
+import { PaginatedTable } from "../components/ui/PaginatedTable";
 import FilterSection from "../components/common/FilterSection";
 import { cn } from "../lib/utils";
 
-// Mock data
-const mockData = [
-  {
-    id: 1,
-    userName: "John Smith",
-    email: "john.smith@company.com",
-    status: 0,
-    complaint: 2,
-    inquiry: 5,
-    pricingNegotiation: 0,
-    proposal: 3,
-    logistics: 0,
-    acknowledgement: 1,
-    statusOfInquiry: 0,
-    unclassified: 0,
-    total: 11,
-    count_24_48: 3,
-    count_48_72: 2,
-    count_72_168: 4,
-    count_168_plus: 2,
-    trend: "up",
-  },
-  {
-    id: 2,
-    userName: "Sarah Johnson",
-    email: "sarah.j@company.com",
-    status: 0,
-    complaint: 4,
-    inquiry: 8,
-    pricingNegotiation: 0,
-    proposal: 2,
-    logistics: 0,
-    acknowledgement: 0,
-    statusOfInquiry: 1,
-    unclassified: 0,
-    total: 15,
-    count_24_48: 5,
-    count_48_72: 4,
-    count_72_168: 5,
-    count_168_plus: 1,
-    trend: "down",
-  },
-  {
-    id: 3,
-    userName: "Mike Wilson",
-    email: "mike.w@company.com",
-    status: 0,
-    complaint: 1,
-    inquiry: 3,
-    pricingNegotiation: 0,
-    proposal: 5,
-    logistics: 0,
-    acknowledgement: 2,
-    statusOfInquiry: 0,
-    unclassified: 0,
-    total: 11,
-    count_24_48: 4,
-    count_48_72: 3,
-    count_72_168: 4,
-    count_168_plus: 0,
-    trend: "up",
-  },
-];
+// Generate unique categories from mockUserEmailData
+const getUniqueCategories = () => {
+  if (!mockUserEmailData.categories) return [];
+  return Object.keys(mockUserEmailData.categories).filter(category => category !== "_id" && category !== "user_id" && category !== "user_email" && category !== "full_name");
+};
 
-const mockEmails = [
-  {
+// Generate mock users based on email domains and data
+const generateMockUsers = () => {
+  const categories = getUniqueCategories();
+
+  // Create a single user entry for the logged-in user
+  const userEmail = mockUserEmailData.user_email;
+  const userName = mockUserEmailData.full_name || userEmail.split('@')[0];
+
+  const user = {
     id: 1,
-    sender: "customer1@example.com",
-    customerName: "ABC Corp",
-    subject: "Urgent: Product inquiry regarding bulk order",
-    preview: "We are interested in placing a bulk order for your products. Could you please provide pricing details...",
-    receivedAt: "2024-01-15T10:30:00",
-    category: "Inquiry",
-    timeUnreplied: "36 hours",
+    userName: userName,
+    email: userEmail,
+    categories: {}
+  };
+
+  // Group all emails by category for this user
+  categories.forEach(category => {
+    const emailsInCategory = mockUserEmailData.categories[category] || [];
+    user.categories[category] = emailsInCategory;
+  });
+
+  // Calculate counts
+  const categoryCounts = {};
+  let total = 0;
+  let count_24_48 = 0;
+  let count_48_72 = 0;
+  let count_72_168 = 0;
+  let count_168_plus = 0;
+
+  categories.forEach(category => {
+    const emailsInCategory = user.categories[category] || [];
+    categoryCounts[category.toLowerCase()] = emailsInCategory.length;
+    total += emailsInCategory.length;
+
+    emailsInCategory.forEach(email => {
+      if (email.hours_unreplied <= 48) count_24_48++;
+      else if (email.hours_unreplied <= 72) count_48_72++;
+      else if (email.hours_unreplied <= 168) count_72_168++;
+      else count_168_plus++;
+    });
+  });
+
+  return [{
+    id: user.id,
+    userName: user.userName,
+    email: user.email,
+    total,
+    count_24_48,
+    count_48_72,
+    count_72_168,
+    count_168_plus,
+    trend: total > 10 ? "up" : "down",
+    ...categoryCounts
+  }];
+};
+
+// Extract email address from "Name <email>" format
+const extractEmailInfo = (fromEmail) => {
+  const match = fromEmail.match(/(.*?)\s*<(.+?)>/);
+  if (match) {
+    return {
+      name: match[1].trim(),
+      email: match[2].trim()
+    };
+  }
+  return {
+    name: fromEmail,
+    email: fromEmail
+  };
+};
+
+// Get dynamic table headers from categories
+const getTableHeaders = () => {
+  const categories = getUniqueCategories();
+  return [
+    { key: "userName", label: "User" },
+    ...categories.map(category => ({ key: category.toLowerCase(), label: category })),
+    { key: "total", label: "Total" }
+  ];
+};
+
+// Mock user email data with categories
+const mockUserEmailData = {
+  "_id": {
+    "$oid": "68ee142883f3599e3808294d"
   },
-  {
-    id: 2,
-    sender: "customer2@example.com",
-    customerName: "XYZ Industries",
-    subject: "Follow-up on previous inquiry",
-    preview: "I sent an email last week regarding the product specifications. Waiting for your response...",
-    receivedAt: "2024-01-14T14:20:00",
-    category: "Status-of-Inquiry",
-    timeUnreplied: "48 hours",
-  },
-  {
-    id: 3,
-    sender: "customer3@example.com",
-    customerName: "Tech Solutions Ltd",
-    subject: "Proposal review and feedback requested",
-    preview: "Thank you for your proposal. We would like to discuss some modifications before proceeding...",
-    receivedAt: "2024-01-13T09:15:00",
-    category: "Proposal",
-    timeUnreplied: "72 hours",
-  },
-];
+  "user_id": 11,
+  "user_email": "yashpandya21@gnu.ac.in",
+  "full_name": "YASH PANDYA",
+  "categories": {
+    "Status": [],
+    "Complaint": [
+      {
+        "subject": "Damaged Product & Delivery Delay",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 122.84796566552586,
+        "inbox_date": "Thu, 9 Oct 2025 11:52:20 +0530"
+      }
+    ],
+    "Inquiry": [
+      {
+        "subject": "H2SO4",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 115.64102122108142,
+        "inbox_date": "Thu, 9 Oct 2025 19:04:45 +0530"
+      },
+      {
+        "subject": "Zinc",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 119.98046566552586,
+        "inbox_date": "Thu, 9 Oct 2025 14:44:23 +0530"
+      },
+      {
+        "subject": "Availability of Calcium chloride Barrels",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 121.6912989988592,
+        "inbox_date": "Thu, 9 Oct 2025 13:01:44 +0530"
+      },
+      {
+        "subject": "Matpers EDC 200 - Raw Material Documentation Checklist",
+        "from_email": "Yash  Pandya <yash.pandya@growexx.com>",
+        "hours_unreplied": 143.50435455441476,
+        "inbox_date": "Wed, 8 Oct 2025 09:42:57 +0000"
+      }
+      ,
+      {
+        "subject": "Availability of Calcium chloride Barrels",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 121.6912989988592,
+        "inbox_date": "Thu, 9 Oct 2025 13:01:44 +0530"
+      },
+      {
+        "subject": "Matpers EDC 200 - Raw Material Documentation Checklist",
+        "from_email": "Yash  Pandya <yash.pandya@growexx.com>",
+        "hours_unreplied": 143.50435455441476,
+        "inbox_date": "Wed, 8 Oct 2025 09:42:57 +0000"
+      }
+    ],
+    "Pricing-Negotiation": [
+      {
+        "subject": "Re: Inquiry: Industrial Grade Hydrochloric Acid (HCl) Supply",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 138.6537989988592,
+        "inbox_date": "Wed, 8 Oct 2025 20:03:59 +0530"
+      }
+    ],
+    "Proposal": [
+      {
+        "subject": "Contract Finalization",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 122.89602122108141,
+        "inbox_date": "Thu, 9 Oct 2025 11:49:27 +0530"
+      }
+    ],
+    "Logistics": [
+      {
+        "subject": "Urgent: Delay in Truck Arrival at Loading Bay",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 122.87102122108142,
+        "inbox_date": "Thu, 9 Oct 2025 11:50:57 +0530"
+      }
+    ],
+    "Acknowledgement": [
+      {
+        "subject": "Hi",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 118.5937989988592,
+        "inbox_date": "Thu, 9 Oct 2025 16:07:35 +0530"
+      },
+      {
+        "subject": "Re: H2SO4",
+        "from_email": "Yash Pandya <yashpandya436@gmail.com>",
+        "hours_unreplied": 143.7249101099703,
+        "inbox_date": "Wed, 8 Oct 2025 14:59:43 +0530"
+      }
+    ],
+    "Status-of-Inquiry": [
+      {
+        "subject": "Request for Delivery Status",
+        "from_email": "Yash  Pandya <yash.pandya@growexx.com>",
+        "hours_unreplied": 122.35824344330364,
+        "inbox_date": "Thu, 9 Oct 2025 06:51:43 +0000"
+      }
+    ],
+    "Unclassified": [
+      {
+        "subject": "H2SO4",
+        "from_email": "Yash  Pandya <yash.pandya@growexx.com>",
+        "hours_unreplied": 166.50907677663696,
+        "inbox_date": "Tue, 7 Oct 2025 10:42:40 +0000"
+      }
+    ]
+  }
+};
 
 const summaryStats = [
   {
     title: "Total Unreplied",
-    value: 156,
+    value: 12,
     icon: Mail,
     trend: "+12%",
     trendUp: true,
@@ -117,7 +223,7 @@ const summaryStats = [
   },
   {
     title: "Critical (7+ Days)",
-    value: 23,
+    value: 0,
     icon: AlertTriangle,
     trend: "+5%",
     trendUp: true,
@@ -138,19 +244,150 @@ const summaryStats = [
   //   trend: "+3%",
   //   trendUp: true,
   //   color: "text-green-600",
-  // },
-];
+  // }
+]
 
 const EmailAnalytics = () => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [emailCurrentPage, setEmailCurrentPage] = useState(1);
+  const [emailsPerPage, setEmailsPerPage] = useState(5);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Generate dynamic data from JSON
+  const mockData = generateMockUsers();
+  const tableHeaders = getTableHeaders();
+
+  // Column definitions for Response Dashboard
+  const responseColumns = [
+    {
+      key: "userName",
+      header: "User",
+      sortable: true,
+      className: "w-[200px]",
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+              {getInitials(row.userName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="overflow-hidden">
+            <p className="font-medium text-sm truncate">{row.userName}</p>
+            <p className="text-xs text-muted-foreground truncate">{row.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    ...tableHeaders.slice(1, -1).map((header) => ({
+      key: header.key,
+      header: header.label,
+      sortable: true,
+      className: "text-center",
+      cellClassName: "text-center",
+      render: (row) => {
+        const count = row[header.key] || 0;
+        return (
+          <Badge
+            variant={getCategoryColor(header.key)}
+            className={`${count > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"} text-xs px-2 py-1`}
+            onClick={() => handleCategoryClick(row, header.label, count)}
+          >
+            {count}
+          </Badge>
+        );
+      },
+    })),
+    {
+      key: "total",
+      header: "Total",
+      sortable: true,
+      className: "text-center font-bold",
+      cellClassName: "text-center",
+      render: (row) => <span className="font-bold text-base">{row.total}</span>,
+    },
+  ];
+
+  // Column definitions for Aging Dashboard
+  const agingColumns = [
+    {
+      key: "userName",
+      header: "User",
+      sortable: true,
+      className: "w-[200px]",
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+              {getInitials(row.userName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="overflow-hidden">
+            <p className="font-medium text-sm truncate">{row.userName}</p>
+            <p className="text-xs text-muted-foreground truncate">{row.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "count_24_48",
+      header: "24-48 Hrs",
+      sortable: true,
+      className: "text-center",
+      cellClassName: "text-center",
+      render: (row) => <span className="text-sm">{row.count_24_48}</span>,
+    },
+    {
+      key: "count_48_72",
+      header: "48-72 Hrs",
+      sortable: true,
+      className: "text-center",
+      cellClassName: "text-center",
+      render: (row) => (
+        <span className="text-sm font-medium text-amber-600">{row.count_48_72}</span>
+      ),
+    },
+    {
+      key: "count_72_168",
+      header: "72-168 Hrs",
+      sortable: true,
+      className: "text-center",
+      cellClassName: "text-center",
+      render: (row) => (
+        <span className="text-sm font-semibold text-orange-600">{row.count_72_168}</span>
+      ),
+    },
+    {
+      key: "count_168_plus",
+      header: "7+ Days",
+      sortable: true,
+      className: "text-center",
+      cellClassName: "text-center",
+      render: (row) => (
+        <span className={cn(
+          "text-sm font-bold",
+          row.count_168_plus > 0 ? "text-red-600" : "text-muted-foreground"
+        )}>
+          {row.count_168_plus}
+        </span>
+      ),
+    },
+    {
+      key: "total",
+      header: "Total",
+      sortable: true,
+      className: "text-center font-bold",
+      cellClassName: "text-center",
+      render: (row) => <span className="font-bold text-base">{row.total}</span>,
+    },
+  ];
 
   const handleCategoryClick = (user, category, count) => {
     if (count > 0) {
       setSelectedUser(user);
       setSelectedCategory(category);
       setModalOpen(true);
+      setEmailCurrentPage(1); // Reset to first page when opening modal
     }
   };
 
@@ -180,8 +417,74 @@ const EmailAnalytics = () => {
       .toUpperCase();
   };
 
+  // Format hours into readable time string
+  const formatHoursUnreplied = (hours) => {
+    if (hours < 24) {
+      return `${Math.round(hours)} hours`;
+    } else if (hours < 168) {
+      const days = Math.floor(hours / 24);
+      const remainingHours = Math.round(hours % 24);
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days} days`;
+    } else {
+      const weeks = Math.floor(hours / 168);
+      const days = Math.floor((hours % 168) / 24);
+      return days > 0 ? `${weeks}w ${days}d` : `${weeks} weeks`;
+    }
+  };
+
+// Extract email address from "Name <email>" format
+const extractEmailInfo = (fromEmail) => {
+  const match = fromEmail.match(/(.*?)\s*<(.+?)>/);
+  if (match) {
+    return {
+      name: match[1].trim(),
+      email: match[2].trim()
+    };
+  }
+  return {
+    name: fromEmail,
+    email: fromEmail
+  };
+};
+
+  // Get emails for the selected category (sorted by date ascending)
+  const getEmailsForCategory = () => {
+    if (!selectedCategory || !mockUserEmailData.categories) {
+      return [];
+    }
+    const emails = mockUserEmailData.categories[selectedCategory] || [];
+    // Sort by inbox_date ascending (oldest first)
+    return [...emails].sort((a, b) => {
+      const dateA = new Date(a.inbox_date);
+      const dateB = new Date(b.inbox_date);
+      return dateA - dateB;
+    });
+  };
+
+  // Get paginated emails for the selected category
+  const getPaginatedEmailsForCategory = () => {
+    const emails = getEmailsForCategory();
+    const startIndex = (emailCurrentPage - 1) * emailsPerPage;
+    const endIndex = startIndex + emailsPerPage;
+    return emails.slice(startIndex, endIndex);
+  };
+
+  // Calculate total email pages
+  const totalEmailPages = Math.ceil(getEmailsForCategory().length / emailsPerPage);
+
+  // Handle email page change
+  const handleEmailPageChange = (page) => {
+    setEmailCurrentPage(Math.max(1, Math.min(page, totalEmailPages)));
+  };
+
+  // Handle emails per page change
+  const handleEmailsPerPageChange = (e) => {
+    setEmailsPerPage(Number(e.target.value));
+    setEmailCurrentPage(1);
+  };
+
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
+    <div className="space-y-6 w-full mx-auto px-4">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold mb-2">Email Analytics Dashboard</h1>
@@ -213,255 +516,88 @@ const EmailAnalytics = () => {
         </div>
 
       {/* Section 1: Response Dashboard */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Unreplied Emails by Category (24+ hrs)</h2>
-        <Card>
-          <CardContent className="p-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">User</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center">Complaint</TableHead>
-                  <TableHead className="text-center">Inquiry</TableHead>
-                  <TableHead className="text-center">Pricing-Negotiation</TableHead>
-                  <TableHead className="text-center">Proposal</TableHead>
-                  <TableHead className="text-center">Logistics</TableHead>
-                  <TableHead className="text-center">Acknowledgement</TableHead>
-                  <TableHead className="text-center">Status-of-Inquiry</TableHead>
-                  <TableHead className="text-center">Unclassified</TableHead>
-                  <TableHead className="text-center font-bold">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockData.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(row.userName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{row.userName}</p>
-                          <p className="text-xs text-muted-foreground">{row.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("status")}
-                        className={row.status > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Status", row.status)}
-                      >
-                        {row.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("complaint")}
-                        className={row.complaint > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Complaint", row.complaint)}
-                      >
-                        {row.complaint}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("inquiry")}
-                        className={row.inquiry > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Inquiry", row.inquiry)}
-                      >
-                        {row.inquiry}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("pricingNegotiation")}
-                        className={row.pricingNegotiation > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Pricing-Negotiation", row.pricingNegotiation)}
-                      >
-                        {row.pricingNegotiation}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("proposal")}
-                        className={row.proposal > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Proposal", row.proposal)}
-                      >
-                        {row.proposal}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("logistics")}
-                        className={row.logistics > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Logistics", row.logistics)}
-                      >
-                        {row.logistics}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("acknowledgement")}
-                        className={row.acknowledgement > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Acknowledgement", row.acknowledgement)}
-                      >
-                        {row.acknowledgement}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("statusOfInquiry")}
-                        className={row.statusOfInquiry > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Status-of-Inquiry", row.statusOfInquiry)}
-                      >
-                        {row.statusOfInquiry}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={getCategoryColor("unclassified")}
-                        className={row.unclassified > 0 ? "cursor-pointer hover:scale-110 transition-transform" : "opacity-50"}
-                        onClick={() => handleCategoryClick(row, "Unclassified", row.unclassified)}
-                      >
-                        {row.unclassified}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="font-bold text-lg">{row.total}</span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      <div className="w-full">
+        <h2 className="text-xl font-semibold mb-3">Unreplied Emails by Category (24+ hrs)</h2>
+        <Card className="shadow-md">
+          <CardContent className="p-0">
+            <PaginatedTable
+              data={mockData}
+              columns={responseColumns}
+              searchKey="userName"
+              searchPlaceholder="Filter users..."
+              defaultSort={{ key: "total", direction: "desc" }}
+              pageSize={10}
+            />
           </CardContent>
         </Card>
       </div>
 
       {/* Section 2: Aging Report */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Aging Report</h2>
-        <p className="text-sm text-muted-foreground mb-4">
+        <h2 className="text-xl font-semibold mb-2">Aging Report</h2>
+        <p className="text-sm text-muted-foreground mb-3">
           Time-based analysis of unreplied emails per user
         </p>
 
-        {/* Aging Table - Minimal Design */}
-        <Card>
-          <CardContent className="p-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">User</TableHead>
-                  <TableHead className="text-center">
-                    <div>24-48 Hours</div>
-                    <div className="text-xs font-normal text-muted-foreground">Warning</div>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <div>48-72 Hours</div>
-                    <div className="text-xs font-normal text-muted-foreground">Attention</div>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <div>72-168 Hours</div>
-                    <div className="text-xs font-normal text-muted-foreground">Urgent</div>
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <div>7+ Days</div>
-                    <div className="text-xs font-normal text-muted-foreground">Critical</div>
-                  </TableHead>
-                  <TableHead className="text-center font-bold">Total Unreplied</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockData.map((row) => (
-                  <TableRow key={row.id} className="hover:bg-muted/30">
-                    <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(row.userName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{row.userName}</p>
-                          <p className="text-xs text-muted-foreground">{row.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center py-4 px-6">
-                      <span className="text-base">{row.count_24_48}</span>
-                    </TableCell>
-                    <TableCell className="text-center py-4 px-6">
-                      <span className="text-base font-medium text-amber-600">
-                        {row.count_48_72}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center py-4 px-6">
-                      <span className="text-base font-semibold text-orange-600">
-                        {row.count_72_168}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center py-4 px-6">
-                      <span className={cn(
-                        "text-base font-bold",
-                        row.count_168_plus > 0 ? "text-red-600" : "text-muted-foreground"
-                      )}>
-                        {row.count_168_plus}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center py-4 px-6">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="font-bold text-lg">{row.total}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        <Card className="shadow-md">
+          <CardContent className="p-0">
+            <PaginatedTable
+              data={mockData}
+              columns={agingColumns}
+              searchKey="userName"
+              searchPlaceholder="Filter users..."
+              defaultSort={{ key: "total", direction: "desc" }}
+              pageSize={10}
+            />
           </CardContent>
         </Card>
       </div>
 
       {/* Email Details Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} className="max-w-4xl">
-        <ModalClose onClose={() => setModalOpen(false)} />
-        <ModalHeader>
-          <div>
-            <ModalTitle>Unreplied Emails - {selectedCategory}</ModalTitle>
-            <ModalDescription>User: {selectedUser?.userName}</ModalDescription>
-          </div>
-        </ModalHeader>
-        <ModalContent>
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-            {mockEmails.map((email) => (
-              <Card key={email.id} className="hover:shadow-md transition-shadow">
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-4xl" onClose={() => setModalOpen(false)}>
+          <DialogHeader>
+            <DialogTitle>Unreplied Emails - {selectedCategory}</DialogTitle>
+            <DialogDescription>
+              User: {selectedUser?.userName} ({getEmailsForCategory().length} emails)
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="space-y-3">
+            {/* Email List */}
+            {getEmailsForCategory().length > 0 ? (
+              getPaginatedEmailsForCategory().map((email, index) => {
+                const emailInfo = extractEmailInfo(email.from_email);
+                return (
+                  <Card key={index} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">{email.sender}</p>
-                        <p className="text-xs text-muted-foreground">{email.customerName}</p>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{emailInfo.name}</p>
+                            <p className="text-xs text-muted-foreground">{emailInfo.email}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="font-semibold text-sm line-clamp-1">{email.subject}</p>
+                          <p className="font-semibold text-sm">{email.subject}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{email.preview}</p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className="text-xs">
-                        {new Date(email.receivedAt).toLocaleString()}
+                            <Clock className="h-3 w-3 mr-1 inline" />
+                            {email.inbox_date}
                       </Badge>
-                      <Badge variant={getCategoryColor(email.category)} className="text-xs">
-                        {email.category}
+                          <Badge variant={getCategoryColor(selectedCategory)} className="text-xs">
+                            {selectedCategory}
                       </Badge>
-                      <Badge variant="red" className="text-xs">
-                        Unreplied: {email.timeUnreplied}
+                          <Badge 
+                            variant={email.hours_unreplied > 168 ? "red" : email.hours_unreplied > 72 ? "orange" : "yellow"} 
+                            className="text-xs font-semibold"
+                          >
+                            <AlertTriangle className="h-3 w-3 mr-1 inline" />
+                            Unreplied: {formatHoursUnreplied(email.hours_unreplied)}
                       </Badge>
                     </div>
-                    <div className="flex gap-2 pt-2">
+                        {/* <div className="flex gap-2 pt-2">
                       <Button size="sm" variant="default">
                         <ExternalLink className="h-3 w-3 mr-1" />
                         View Email
@@ -470,14 +606,83 @@ const EmailAnalytics = () => {
                         <Check className="h-3 w-3 mr-1" />
                         Mark as Replied
                       </Button>
-                    </div>
+                        </div> */}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No unreplied emails in this category</p>
           </div>
-        </ModalContent>
-      </Modal>
+            )}
+             {/* Email Pagination Controls */}
+            {getEmailsForCategory().length > 0 && (
+              <div className="flex items-center justify-between px-1 py-2 border-b">
+                <div className="flex-1 text-sm text-muted-foreground">
+                  Showing {((emailCurrentPage - 1) * emailsPerPage) + 1} to{" "}
+                  {Math.min(emailCurrentPage * emailsPerPage, getEmailsForCategory().length)} of{" "}
+                  {getEmailsForCategory().length} emails
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">Per page</p>
+                    <Select
+                      value={emailsPerPage}
+                      onChange={handleEmailsPerPageChange}
+                      className="h-9 w-[60px]"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                      <option value={20}>20</option>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEmailPageChange(1)}
+                      disabled={emailCurrentPage === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEmailPageChange(emailCurrentPage - 1)}
+                      disabled={emailCurrentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium px-2">
+                      {emailCurrentPage} of {totalEmailPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEmailPageChange(emailCurrentPage + 1)}
+                      disabled={emailCurrentPage === totalEmailPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEmailPageChange(totalEmailPages)}
+                      disabled={emailCurrentPage === totalEmailPages}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

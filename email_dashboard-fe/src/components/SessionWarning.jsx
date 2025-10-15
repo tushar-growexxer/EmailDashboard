@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Clock, X, LogIn, Zap } from 'lucide-react';
+import { AlertTriangle, Clock, LogIn, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { ConfirmDialog } from './ui/Dialog';
 
 /**
  * Session warning component that appears when session is about to expire
@@ -33,62 +34,27 @@ const SessionWarning = () => {
     navigate('/login', { replace: true });
   };
 
-  // If session is expired, show full-screen overlay with backdrop blur
+  // If session is expired, show confirmation dialog
   if (sessionWarning.expired) {
     return (
-      <>
-        {/* Backdrop blur overlay - covers entire screen */}
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-          {/* Prevent clicks on background */}
-          <div className="absolute inset-0" onClick={(e) => e.stopPropagation()} />
-
-          {/* Centered modal */}
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-auto border border-gray-200 dark:border-gray-700 animate-in zoom-in-95 duration-300">
-            <div className="p-8">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20">
-                    <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
-                  </div>
-                </div>
-                <div className="ml-6 flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                    Session Expired
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                    Your session has expired for security reasons. Please log in again to continue using the application.
-                  </p>
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleLoginRedirect}
-                      className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      Log In Again
-                    </button>
-                    <button
-                      onClick={handleDismiss}
-                      className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-                <div className="ml-6 flex-shrink-0">
-                  <button
-                    onClick={handleDismiss}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors duration-200 p-1"
-                  >
-                    <span className="sr-only">Close</span>
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
+      <ConfirmDialog
+        open={true}
+        onOpenChange={() => {}}
+        title="Session Expired"
+        description="Your session has expired for security reasons. Please log in again to continue using the application."
+        icon={AlertTriangle}
+        iconClassName="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+        confirmText={
+          <>
+            <LogIn className="h-4 w-4" />
+            Log In Again
+          </>
+        }
+        cancelText="Close"
+        onConfirm={handleLoginRedirect}
+        onCancel={handleDismiss}
+        variant="destructive"
+      />
     );
   }
 
