@@ -63,11 +63,11 @@ const Footer = () => {
                   Email Analytics
                 </a>
               </li>
-              {/* <li>
+              <li>
                 <a href="/sentiment" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Sentiment Analysis
                 </a>
-              </li> */}
+              </li>
               {user?.role === "admin" && (<li>
                 <a href="/settings" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Settings

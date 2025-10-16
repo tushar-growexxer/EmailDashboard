@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Input } from "./Input";
 import { Button } from "./Button";
 import { Select } from "./Select";
+import { cn } from "../../lib/utils";
 
 /**
  * PaginatedTable Component
@@ -108,7 +109,7 @@ export function PaginatedTable({
     <div className="w-full space-y-4">
       {/* Search */}
       {searchKey && (
-        <div className="px-4 py-3">
+        <div className="px-2 pt-2 pb-0">
           <Input
             placeholder={searchPlaceholder}
             value={searchTerm}
@@ -136,13 +137,13 @@ export function PaginatedTable({
                   {column.sortable ? (
                     <button
                       onClick={() => handleSort(column.key)}
-                      className="flex items-center hover:text-foreground transition-colors font-medium"
+                      className={cn("flex items-center justify-center text-center hover:text-foreground transition-colors font-medium w-full", column.className)}
                     >
                       {column.header}
                       {getSortIcon(column.key)}
                     </button>
                   ) : (
-                    <span className="font-medium">{column.header}</span>
+                    <div className={cn("font-medium text-center w-full", column.className)}>{column.header}</div>
                   )}
                 </TableHead>
               ))}

@@ -10,9 +10,13 @@ import { Avatar, AvatarFallback } from "../components/ui/Avatar";
 import { Select } from "../components/ui/Select";
 import { TableSkeleton } from "../components/ui/Skeleton";
 import { PaginatedTable } from "../components/ui/PaginatedTable";
-import { cn } from "../lib/utils";
+import {
+  getInitials,
+  formatDateTimeWithAMPM,
+} from "../utils/dashboardUtils";
 import { useAuth } from "../contexts/AuthContext";
 import { userApi } from "../api/index";
+import { cn } from "../lib/utils";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -74,29 +78,6 @@ const Settings = () => {
     { id: "email", label: "Email Configuration", icon: SettingsIcon },
     // { id: "notifications", label: "Notifications", icon: Bell },
   ];
-
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    
-    // Format as DD/MM/YYYY HH:MM
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
-  };
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -246,15 +227,16 @@ const Settings = () => {
       key: "fullName",
       header: "User",
       sortable: true,
-      className: "min-w-[200px]",
+      className: "text-left min-w-[200px]",
+      cellClassName: "text-left",
       render: (user) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
               {getInitials(user.fullName)}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 pl-2">
             <p className="font-medium truncate text-sm sm:text-base">{user.fullName}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
@@ -286,7 +268,7 @@ const Settings = () => {
       className: "min-w-[140px]",
       render: (user) => (
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {formatDate(user.lastLogin)}
+          {formatDateTimeWithAMPM(user.lastLogin)}
         </span>
       ),
     },

@@ -33,6 +33,8 @@
     "hdb": "^2.26.1",
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.20.0",
+    "node-cache": "^5.1.2",
     "winston": "^3.18.3"
   },
   "devDependencies": {

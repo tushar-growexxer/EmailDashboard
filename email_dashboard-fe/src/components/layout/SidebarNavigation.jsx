@@ -9,11 +9,11 @@ const navigationItems = [
     label: "Email Analytics",
     path: "/email-analytics",
   },
-  // {
-  //   icon: TrendingUp,
-  //   label: "Sentiment",
-  //   path: "/sentiment",
-  // },
+  {
+    icon: TrendingUp,
+    label: "Sentiment",
+    path: "/sentiment",
+  },
 ];
 
 const SidebarNavigation = ({ userRole }) => {

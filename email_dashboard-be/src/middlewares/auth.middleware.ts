@@ -80,9 +80,9 @@ export const authenticateToken = async (
     };
 
     // Refresh token on every request to extend session (activity-based session)
-    // Only refresh if token is more than 5 minutes old to avoid excessive token generation
+    // Only refresh if token is more than 30 minutes old to avoid excessive token generation
     const tokenAge = decoded.iat ? Date.now() / 1000 - decoded.iat : 0;
-    const REFRESH_THRESHOLD = 5 * 60; // 5 minutes in seconds
+    const REFRESH_THRESHOLD = 30 * 60; // 30 minutes in seconds
     
     if (tokenAge > REFRESH_THRESHOLD) {
       const newToken = generateToken({
