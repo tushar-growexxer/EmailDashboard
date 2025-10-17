@@ -6,7 +6,7 @@ import logger from './config/logger';
 import db from './config/database';
 import mongodb from './config/mongodb';
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 /**
  * Initialize the application
@@ -39,12 +39,14 @@ async function initializeApp(): Promise<void> {
         note: 'Configure MONGODB_URI in .env file to enable dashboard features'
       });
     }
-    
-    // Start the server regardless of database connection
-    const server = app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+
+    // Bind to 0.0.0.0 to allow access from other devices on the network
+    const HOST = process.env.HOST || '0.0.0.0';
+    const server = app.listen(PORT as number, HOST, () => {
+      logger.info(`Server running on ${HOST}:${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       logger.info(`API endpoints available at http://localhost:${PORT}/api`);
-      
+      logger.info(`Network access available at http://192.168.10.6:${PORT}/api`);
+
       if (!dbConnected) {
         logger.warn('⚠️  SAP HANA Database not connected - authentication and user management endpoints will not work');
         logger.info('To enable database features:');

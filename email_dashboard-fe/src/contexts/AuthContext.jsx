@@ -12,9 +12,9 @@ const AuthContextType = {
   isAuthenticated: false,
   sessionWarning: null,
   login: async () => ({}),
-  logout: async () => {},
-  refreshProfile: async () => {},
-  extendSession: () => {},
+  logout: async () => { },
+  refreshProfile: async () => { },
+  extendSession: () => { },
 };
 
 /**
@@ -113,11 +113,10 @@ export const AuthProvider = ({ children }) => {
       if (result.success) {
         setUser(result.user);
         setToken(null); // Tokens are in httpOnly cookies
-        
-        // Session manager is already initialized in the useEffect
-        // Just update the activity timestamp for the new login
+
+        // Timestamps are already set in authService.login
+        // Just ensure session manager knows about them
         sessionManager.updateLastActivity();
-        sessionManager.setSessionStart();
 
         return { success: true };
       } else {
@@ -144,7 +143,7 @@ export const AuthProvider = ({ children }) => {
       // Clear local state immediately
       setUser(null);
       setToken(null);
-      
+
       // Call backend logout to clear cookies
       await authService.logout();
 

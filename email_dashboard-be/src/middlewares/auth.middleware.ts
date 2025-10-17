@@ -42,9 +42,14 @@ export const authenticateToken = async (
     const token = req.cookies?.auth_token;
 
     if (!token) {
+      logger.warn('Authentication failed: No token found in cookies', {
+        path: req.path,
+        cookies: Object.keys(req.cookies || {}),
+        hasCookieParser: !!req.cookies,
+      });
       res.status(401).json({
         success: false,
-        message: 'Authentication token is required',
+        message: 'Please re-login/refresh the page to continue.',
       });
       return;
     }
@@ -83,7 +88,7 @@ export const authenticateToken = async (
     // Only refresh if token is more than 30 minutes old to avoid excessive token generation
     const tokenAge = decoded.iat ? Date.now() / 1000 - decoded.iat : 0;
     const REFRESH_THRESHOLD = 30 * 60; // 30 minutes in seconds
-    
+
     if (tokenAge > REFRESH_THRESHOLD) {
       const newToken = generateToken({
         userId: user.id,
@@ -94,7 +99,7 @@ export const authenticateToken = async (
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict' as const,
+        sameSite: (process.env.NODE_ENV === 'production' ? 'strict' : 'lax') as 'strict' | 'lax',
         maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds
         path: '/',
       };
@@ -198,7 +203,7 @@ export const generateToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
  */
 export const verifyToken = (token: string): JWTPayload => {
   const jwtSecret = process.env.JWT_SECRET;
-  
+
   if (!jwtSecret) {
     throw new Error('JWT_SECRET is not configured');
   }

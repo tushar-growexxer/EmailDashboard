@@ -11,9 +11,8 @@
  */
 export function getUniqueCategories(userEmailData) {
   if (!userEmailData || !userEmailData.Intent) return [];
-  
+
   return userEmailData.Intent
-    .filter(intent => intent.count > 0) // Only include categories with emails
     .map(intent => intent.category);
 }
 
@@ -61,7 +60,7 @@ export function transformAgingDashboardData(mongoData) {
   return mongoData.map(user => {
     // Use count_by_bucket from MongoDB Dashboard 2
     const countByBucket = user.count_by_bucket || [];
-    
+
     // Extract counts from count_by_bucket array
     const bucket_24_48 = countByBucket.find(b => b.category === '24h_to_48h');
     const bucket_48_72 = countByBucket.find(b => b.category === '48h_to_72h');
@@ -140,7 +139,7 @@ export function calculateResponseSummaryStats(responseMongoData) {
 
   // Sum totalUnreplied24h from all users
   const totalUnreplied24h = responseMongoData.reduce(
-    (sum, user) => sum + (user.totalUnreplied24h || 0), 
+    (sum, user) => sum + (user.totalUnreplied24h || 0),
     0
   );
 
@@ -183,7 +182,7 @@ export function calculateAgingSummaryStats(agingMongoData) {
 
   // Sum total_unreplied from all users
   const totalUnreplied = agingMongoData.reduce(
-    (sum, user) => sum + (user.total_unreplied || 0), 
+    (sum, user) => sum + (user.total_unreplied || 0),
     0
   );
 
@@ -196,7 +195,7 @@ export function calculateAgingSummaryStats(agingMongoData) {
   agingMongoData.forEach(user => {
     if (user.count_by_bucket && Array.isArray(user.count_by_bucket)) {
       user.count_by_bucket.forEach(bucket => {
-        switch(bucket.category) {
+        switch (bucket.category) {
           case '24h_to_48h':
             count_24_48 += bucket.count || 0;
             break;
@@ -395,7 +394,7 @@ export function mergeUserDashboardData(existingUser, mongoData) {
  */
 export function needsRefresh(lastFetched, maxAgeMinutes = 60) {
   if (!lastFetched) return true;
-  
+
   const now = new Date();
   const ageMinutes = (now - lastFetched) / 1000 / 60;
   return ageMinutes >= maxAgeMinutes;

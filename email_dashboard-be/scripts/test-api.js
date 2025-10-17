@@ -8,7 +8,7 @@
  * 3. Ensure you have a valid admin user in the database
  */
 
-const baseURL = 'http://localhost:3000/api/v1';
+const baseURL = 'http://192.168.10.6:3000/api/v1';
 let authToken = '';
 
 // Test credentials (update these with your actual admin credentials)
@@ -38,7 +38,7 @@ async function makeRequest(url, options = {}) {
  */
 async function testLogin() {
   console.log('🔐 Testing login...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/auth/login`, {
     method: 'POST',
     body: JSON.stringify(testCredentials)
@@ -60,7 +60,7 @@ async function testLogin() {
  */
 async function testValidateToken() {
   console.log('🔍 Testing token validation...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/auth/validate`, {
     headers: {
       'Authorization': `Bearer ${authToken}`
@@ -81,7 +81,7 @@ async function testValidateToken() {
  */
 async function testGetProfile() {
   console.log('👤 Testing get profile...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/auth/profile`, {
     headers: {
       'Authorization': `Bearer ${authToken}`
@@ -103,7 +103,7 @@ async function testGetProfile() {
  */
 async function testGetAllUsers() {
   console.log('👥 Testing get all users...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/users`, {
     headers: {
       'Authorization': `Bearer ${authToken}`
@@ -125,7 +125,7 @@ async function testGetAllUsers() {
  */
 async function testCreateUser() {
   console.log('➕ Testing create user...');
-  
+
   const newUser = {
     fullName: 'Test User',
     email: `testuser${Date.now()}@example.com`,
@@ -156,7 +156,7 @@ async function testCreateUser() {
  */
 async function testGetUserById(userId) {
   console.log('🔍 Testing get user by ID...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/users/${userId}`, {
     headers: {
       'Authorization': `Bearer ${authToken}`
@@ -178,7 +178,7 @@ async function testGetUserById(userId) {
  */
 async function testUpdateUser(userId) {
   console.log('✏️ Testing update user...');
-  
+
   const updateData = {
     fullName: 'Updated Test User',
     role: 'admin'
@@ -207,7 +207,7 @@ async function testUpdateUser(userId) {
  */
 async function testDeleteUser(userId) {
   console.log('🗑️ Testing delete user...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/users/${userId}`, {
     method: 'DELETE',
     headers: {
@@ -229,7 +229,7 @@ async function testDeleteUser(userId) {
  */
 async function testLogout() {
   console.log('🚪 Testing logout...');
-  
+
   const { status, data } = await makeRequest(`${baseURL}/auth/logout`, {
     method: 'POST'
   });

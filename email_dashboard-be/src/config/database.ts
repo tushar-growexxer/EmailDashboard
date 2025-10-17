@@ -20,7 +20,7 @@ export interface DatabaseConfig {
  */
 export const getDatabaseConfig = (): DatabaseConfig => {
   return {
-    host: process.env.SAP_HANA_HOST ?? process.env.SAP_HANA_VPN_HOST ?? 'localhost',
+    host: process.env.SAP_HANA_HOST ?? process.env.SAP_HANA_VPN_HOST ?? '192.168.10.6',
     port: parseInt(process.env.SAP_HANA_PORT ?? '30015'),
     user: process.env.SAP_HANA_USER ?? '',
     password: process.env.SAP_HANA_PASSWORD ?? '',

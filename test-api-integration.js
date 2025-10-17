@@ -5,7 +5,7 @@
  * Run this script to test the authentication endpoints before testing the frontend
  */
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = 'http://192.168.10.6:3000/api/v1';
 
 async function testAPI() {
   console.log('🧪 Testing Email Dashboard Backend API...\n');
@@ -123,7 +123,7 @@ async function testAPI() {
   console.log('\n📋 Next steps:');
   console.log('   1. Start the backend server: cd email_dashboard-be && npm run dev');
   console.log('   2. Start the frontend server: cd email_dashboard-fe && npm run dev');
-  console.log('   3. Open http://localhost:5173 in your browser');
+  console.log('   3. Open http://192.168.10.6:5173 in your browser');
   console.log('   4. Try logging in with test credentials');
   console.log('\n💡 If you need test user data, check the backend database setup in scripts/init-database.sql');
 }

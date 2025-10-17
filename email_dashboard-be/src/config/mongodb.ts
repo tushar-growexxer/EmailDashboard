@@ -17,8 +17,8 @@ export interface MongoDBConfig {
  */
 export const getMongoDBConfig = (): MongoDBConfig => {
   // Support both MONGODB_URI and CONNECTION_STRING for backward compatibility
-  const uri = process.env.MONGODB_URI || process.env.CONNECTION_STRING || 'mongodb://localhost:27017';
-  
+  const uri = process.env.MONGODB_URI || process.env.CONNECTION_STRING || 'mongodb://192.168.10.6:27017';
+
   return {
     uri: uri,
     database: process.env.ANALYTICS_DATABASE || process.env.DATABASE_NAME || 'email_analytics',
@@ -64,10 +64,10 @@ class MongoDBConnection {
       this.isConnecting = true;
 
       logger.info('Connecting to MongoDB...');
-      
+
       // Check if using MongoDB Atlas (srv protocol)
       const isAtlas = this.config.uri.includes('mongodb+srv://');
-      
+
       const options: MongoClientOptions = {
         maxPoolSize: 10,
         minPoolSize: 2,
@@ -82,15 +82,15 @@ class MongoDBConnection {
 
       this.client = new MongoClient(this.config.uri, options);
       await this.client.connect();
-      
+
       this.db = this.client.db(this.config.database);
-      
+
       // Test connection
       await this.db.admin().ping();
-      
+
       logger.info(`Connected to MongoDB database: ${this.config.database}`);
       this.isConnecting = false;
-      
+
       return this.db;
     } catch (error) {
       this.isConnecting = false;

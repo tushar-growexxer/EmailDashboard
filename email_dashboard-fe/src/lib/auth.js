@@ -18,11 +18,14 @@ export class AuthService {
       });
 
       if (response.success) {
+        // IMPORTANT: Set timestamps BEFORE storing user data
+        // This prevents sessionManager from thinking the session is expired
+        const now = Date.now();
+        localStorage.setItem('last_activity', now.toString());
+        localStorage.setItem('session_start', now.toString());
+
         // Store user data in localStorage for session management
         tokenManager.setUser(response.user);
-        
-        // Store session start time for activity tracking
-        tokenManager.setSessionStart();
 
         return {
           success: true,

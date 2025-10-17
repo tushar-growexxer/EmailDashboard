@@ -64,15 +64,21 @@ export class AuthController {
       });
 
       // Set httpOnly cookie with token
+      // Use 'lax' for sameSite to allow cookies to work on network access
       const cookieOptions = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict' as const,
+        secure: false, // Must be false for HTTP development
+        sameSite: 'lax' as const,
         maxAge: 30 * 60 * 1000, // 30 minutes
         path: '/',
       };
 
       res.cookie('auth_token', token, cookieOptions);
+
+      logger.info(`Cookie set for user: ${user.email}`);
+      logger.info(`Cookie options:`, cookieOptions);
+      logger.info(`Request origin: ${req.get('origin')}`);
+      logger.info(`Request host: ${req.get('host')}`);
 
       logger.info(`User logged in successfully: ${user.email}`);
 
@@ -108,8 +114,8 @@ export class AuthController {
     // Clear the auth cookie
     res.clearCookie('auth_token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict' as const,
+      secure: false,
+      sameSite: 'lax' as const,
       path: '/',
     });
 
