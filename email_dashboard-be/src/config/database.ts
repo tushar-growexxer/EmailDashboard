@@ -19,8 +19,11 @@ export interface DatabaseConfig {
  * @returns {DatabaseConfig} Database configuration object
  */
 export const getDatabaseConfig = (): DatabaseConfig => {
+  // Prefer VPN host if available, fallback to direct host
+  const host = process.env.SAP_HANA_VPN_HOST || process.env.SAP_HANA_HOST || '192.168.10.6';
+  
   return {
-    host: process.env.SAP_HANA_HOST ?? process.env.SAP_HANA_VPN_HOST ?? '192.168.10.6',
+    host: host,
     port: parseInt(process.env.SAP_HANA_PORT ?? '30015'),
     user: process.env.SAP_HANA_USER ?? '',
     password: process.env.SAP_HANA_PASSWORD ?? '',
@@ -46,6 +49,9 @@ class DatabaseConnection {
    */
   async connect(): Promise<void> {
     try {
+      logger.info(`Attempting to connect to SAP HANA database at ${this.config.host}:${this.config.port}`);
+      logger.info(`Using user: ${this.config.user}, schema: ${this.config.schema}`);
+      
       this.client = hdb.createClient({
         host: this.config.host,
         port: this.config.port,
@@ -57,10 +63,10 @@ class DatabaseConnection {
       await new Promise<void>((resolve, reject) => {
         this.client!.connect((err: any) => {
           if (err) {
-            logger.error('Database connection failed:', err);
+            logger.error(`Database connection failed to ${this.config.host}:${this.config.port}:`, err);
             reject(err);
           } else {
-            logger.info('Connected to SAP HANA database successfully');
+            logger.info(`✅ Connected to SAP HANA database successfully at ${this.config.host}:${this.config.port}`);
             resolve();
           }
         });

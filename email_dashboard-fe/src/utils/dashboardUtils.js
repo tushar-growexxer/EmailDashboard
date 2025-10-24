@@ -61,38 +61,33 @@ export function transformAgingDashboardData(mongoData) {
     // Use count_by_bucket from MongoDB Dashboard 2
     const countByBucket = user.count_by_bucket || [];
 
-    // Extract counts from count_by_bucket array
-    const bucket_24_48 = countByBucket.find(b => b.category === '24h_to_48h');
-    const bucket_48_72 = countByBucket.find(b => b.category === '48h_to_72h');
-    const bucket_72_168 = countByBucket.find(b => b.category === '72h_to_168h');
-    const bucket_168_plus = countByBucket.find(b => b.category === 'above_168h');
+    // Build dynamic bucket data - supports both naming conventions
+    const bucketMap = {};
+    const bucketData = {};
+    let total = 0;
 
-    const count_24_48 = bucket_24_48?.count || 0;
-    const count_48_72 = bucket_48_72?.count || 0;
-    const count_72_168 = bucket_72_168?.count || 0;
-    const count_168_plus = bucket_168_plus?.count || 0;
+    countByBucket.forEach(bucket => {
+      const category = bucket.category;
+      const count = bucket.count || 0;
+      
+      // Store with original category name
+      bucketMap[category] = count;
+      bucketData[category] = bucket;
+      total += count;
+    });
 
-    // Use total_unreplied from MongoDB or calculate
-    const total = user.total_unreplied || (count_24_48 + count_48_72 + count_72_168 + count_168_plus);
+    // Use total_unreplied from MongoDB if available, otherwise use calculated total
+    total = user.total_unreplied || total;
 
     return {
       id: user.user_id || user._id,
       userName: formatProperCase(user.full_name || user.user_email?.split('@')[0] || 'Unknown User'),
       email: user.user_email || '',
-      count_24_48,
-      count_48_72,
-      count_72_168,
-      count_168_plus,
+      ...bucketMap, // Spread all bucket counts dynamically
       total,
-      // Store raw bucket data for email details
-      bucketData: {
-        '24h_to_48h': bucket_24_48,
-        '48h_to_72h': bucket_48_72,
-        '72h_to_168h': bucket_72_168,
-        'above_168h': bucket_168_plus,
-      },
-      // Store time_buckets for detailed email access
+      bucketData, // Store raw bucket data for email details
       time_buckets: user.time_buckets || {},
+      rawData: user, // Keep raw MongoDB data for reference
     };
   });
 }
@@ -121,6 +116,47 @@ export function getTableHeaders(mongoData) {
     })),
     { key: 'total', label: 'Total' },
   ];
+}
+
+/**
+ * Get aging table headers dynamically from MongoDB data
+ * Formats category names into readable column headers
+ * @param {Array} mongoData - Array of MongoDB documents with count_by_bucket
+ * @returns {Array} Array of header objects {key, label}
+ */
+export function getAgingTableHeaders(mongoData) {
+  if (!Array.isArray(mongoData) || mongoData.length === 0) {
+    return [];
+  }
+
+  // Get unique categories from all users
+  const categoriesSet = new Set();
+  mongoData.forEach(user => {
+    if (user.count_by_bucket && Array.isArray(user.count_by_bucket)) {
+      user.count_by_bucket.forEach(bucket => {
+        categoriesSet.add(bucket.category);
+      });
+    }
+  });
+
+  const categories = Array.from(categoriesSet);
+
+  // Map categories to readable labels
+  const categoryLabels = {
+    '1_to_2_days': '1-2 Days',
+    '2_to_3_days': '2-3 Days',
+    '3_to_7_days': '3-7 Days',
+    'above_7_days': '7+ Days',
+    '24h_to_48h': '24-48 Hrs',
+    '48h_to_72h': '48-72 Hrs',
+    '72h_to_168h': '3-7 Days',
+    'above_168h': '7+ Days',
+  };
+
+  return categories.map(category => ({
+    key: category,
+    label: categoryLabels[category] || category.replace(/_/g, ' ').toUpperCase(),
+  }));
 }
 
 /**
@@ -172,10 +208,7 @@ export function calculateAgingSummaryStats(agingMongoData) {
   if (!Array.isArray(agingMongoData) || agingMongoData.length === 0) {
     return {
       totalUnreplied: 0,
-      count_24_48: 0,
-      count_48_72: 0,
-      count_72_168: 0,
-      count_168_plus: 0,
+      critical: 0,
       totalUsers: 0,
     };
   }
@@ -186,28 +219,14 @@ export function calculateAgingSummaryStats(agingMongoData) {
     0
   );
 
-  // Aggregate counts from count_by_bucket
-  let count_24_48 = 0;
-  let count_48_72 = 0;
-  let count_72_168 = 0;
-  let count_168_plus = 0;
-
+  // Find critical emails (7+ days) - works with both naming conventions
+  let critical = 0;
   agingMongoData.forEach(user => {
     if (user.count_by_bucket && Array.isArray(user.count_by_bucket)) {
       user.count_by_bucket.forEach(bucket => {
-        switch (bucket.category) {
-          case '24h_to_48h':
-            count_24_48 += bucket.count || 0;
-            break;
-          case '48h_to_72h':
-            count_48_72 += bucket.count || 0;
-            break;
-          case '72h_to_168h':
-            count_72_168 += bucket.count || 0;
-            break;
-          case 'above_168h':
-            count_168_plus += bucket.count || 0;
-            break;
+        // Check for both old and new naming conventions for 7+ days
+        if (bucket.category === 'above_168h' || bucket.category === 'above_7_days') {
+          critical += bucket.count || 0;
         }
       });
     }
@@ -215,11 +234,7 @@ export function calculateAgingSummaryStats(agingMongoData) {
 
   return {
     totalUnreplied,
-    count_24_48,
-    count_48_72,
-    count_72_168,
-    count_168_plus,
-    critical: count_168_plus, // Critical = above 168h (7 days)
+    critical, // Critical = above 7 days
     totalUsers: agingMongoData.length,
   };
 }
@@ -490,6 +505,7 @@ export default {
   transformResponseDashboardData,
   transformAgingDashboardData,
   getTableHeaders,
+  getAgingTableHeaders,
   calculateSummaryStats,
   calculateResponseSummaryStats,
   calculateAgingSummaryStats,

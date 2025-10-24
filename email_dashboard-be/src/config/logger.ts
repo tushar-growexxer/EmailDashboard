@@ -66,8 +66,9 @@ const logger = winston.createLogger({
   ],
 });
 
-// Add console transport for development
-if (process.env.NODE_ENV !== 'production') {
+// Add console transport for development (always add in development, or when explicitly requested)
+const shouldAddConsole = process.env.NODE_ENV !== 'production' || process.env.LOG_TO_CONSOLE === 'true';
+if (shouldAddConsole) {
   logger.add(
     new winston.transports.Console({
       format: consoleFormat,

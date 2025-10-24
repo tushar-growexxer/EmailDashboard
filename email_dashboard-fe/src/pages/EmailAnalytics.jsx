@@ -13,6 +13,7 @@ import {
   transformResponseDashboardData,
   transformAgingDashboardData,
   getTableHeaders,
+  getAgingTableHeaders,
   calculateResponseSummaryStats,
   calculateAgingSummaryStats,
   getCategoryColor,
@@ -168,80 +169,71 @@ const EmailAnalytics = () => {
     },
   ], [tableHeaders]);
 
-  // Column definitions for Aging Dashboard
-  const agingColumns = [
-    {
-      key: "userName",
-      header: "Sales Employee",
-      sortable: true,
-      className: "w-[200px] text-left",
-      cellClassName: "text-left",
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <Avatar className="sm:h-10 sm:w-10">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {getInitials(row.userName)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="overflow-hidden">
-            <p className="font-medium text-sm truncate">{row.userName}</p>
-            <p className="text-xs text-muted-foreground truncate">{row.email}</p>
+  // Get aging table headers dynamically
+  const agingHeaders = useMemo(() => {
+    return getAgingTableHeaders(agingData);
+  }, [agingData]);
+
+  // Column definitions for Aging Dashboard (Dynamic)
+  const agingColumns = useMemo(() => {
+    // Color mapping for different time ranges
+    const getCategoryColorClass = (index, total) => {
+      if (index === 0) return "text-sm"; // First bucket - normal
+      if (index === total - 1) return "text-sm font-bold text-red-600"; // Last bucket (7+) - red
+      if (index === total - 2) return "text-sm font-semibold text-orange-600"; // Second to last - orange
+      return "text-sm font-medium text-amber-600"; // Middle buckets - amber
+    };
+
+    return [
+      {
+        key: "userName",
+        header: "Sales Employee",
+        sortable: true,
+        className: "w-[200px] text-left",
+        cellClassName: "text-left",
+        render: (row) => (
+          <div className="flex items-center gap-2">
+            <Avatar className="sm:h-10 sm:w-10">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                {getInitials(row.userName)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="overflow-hidden">
+              <p className="font-medium text-sm truncate">{row.userName}</p>
+              <p className="text-xs text-muted-foreground truncate">{row.email}</p>
+            </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      key: "count_24_48",
-      header: "24-48 Hrs",
-      sortable: true,
-      className: "text-center",
-      cellClassName: "text-center",
-      render: (row) => <span className="text-sm">{row.count_24_48}</span>,
-    },
-    {
-      key: "count_48_72",
-      header: "48-72 Hrs",
-      sortable: true,
-      className: "text-center",
-      cellClassName: "text-center",
-      render: (row) => (
-        <span className="text-sm font-medium text-amber-600">{row.count_48_72}</span>
-      ),
-    },
-    {
-      key: "count_72_168",
-      header: "72-168 Hrs",
-      sortable: true,
-      className: "text-center",
-      cellClassName: "text-center",
-      render: (row) => (
-        <span className="text-sm font-semibold text-orange-600">{row.count_72_168}</span>
-      ),
-    },
-    {
-      key: "count_168_plus",
-      header: "7+ Days",
-      sortable: true,
-      className: "text-center",
-      cellClassName: "text-center",
-      render: (row) => (
-        <span className={cn(
-          "text-sm font-bold",
-          row.count_168_plus > 0 ? "text-red-600" : "text-muted-foreground"
-        )}>
-          {row.count_168_plus}
-        </span>
-      ),
-    },
-    {
-      key: "total",
-      header: "Total",
-      sortable: true,
-      className: "text-center font-bold",
-      cellClassName: "text-center",
-      render: (row) => <span className="font-bold text-base">{row.total}</span>,
-    },
-  ];
+        ),
+      },
+      // Dynamic aging bucket columns
+      ...agingHeaders.map((header, index) => ({
+        key: header.key,
+        header: header.label,
+        sortable: true,
+        className: "text-center",
+        cellClassName: "text-center",
+        render: (row) => {
+          const value = row[header.key] || 0;
+          return (
+            <span className={cn(
+              getCategoryColorClass(index, agingHeaders.length),
+              value === 0 && "text-muted-foreground"
+            )}>
+              {value}
+            </span>
+          );
+        },
+      })),
+      {
+        key: "total",
+        header: "Total",
+        sortable: true,
+        className: "text-center font-bold",
+        cellClassName: "text-center",
+        render: (row) => <span className="font-bold text-base">{row.total}</span>,
+      },
+    ];
+  }, [agingHeaders]);
 
   // Handle category click to show email details (for specific category)
   const handleCategoryClick = (userRow, category, count) => {
