@@ -14,7 +14,7 @@ import { cn } from "../../lib/utils";
  * @param {Array} props.data - Array of data objects
  * @param {Array} props.columns - Array of column definitions
  * @param {number} props.pageSize - Number of rows per page (default: 10)
- * @param {string} props.searchKey - Key to search by (optional)
+ * @param {string|Array} props.searchKey - Key(s) to search by (optional) - can be string or array of strings
  * @param {string} props.searchPlaceholder - Search input placeholder
  * @param {Object} props.defaultSort - Default sort { key: string, direction: 'asc'|'desc' }
  */
@@ -35,12 +35,18 @@ export function PaginatedTable({
   const filteredData = useMemo(() => {
     if (!searchKey || !searchTerm) return data;
     
+    const searchKeys = Array.isArray(searchKey) ? searchKey : [searchKey];
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    
     return data.filter((row) => {
-      const value = row[searchKey];
-      if (typeof value === 'string') {
-        return value.toLowerCase().includes(searchTerm.toLowerCase());
-      }
-      return false;
+      // Check if any of the search keys match
+      return searchKeys.some((key) => {
+        const value = row[key];
+        if (typeof value === 'string') {
+          return value.toLowerCase().includes(lowerSearchTerm);
+        }
+        return false;
+      });
     });
   }, [data, searchKey, searchTerm]);
 

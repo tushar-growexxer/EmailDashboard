@@ -410,7 +410,7 @@ const EmailAnalytics = () => {
               <PaginatedTable
                 data={transformedResponseData}
                 columns={responseColumns}
-                searchKey="userName"
+                searchKey= {["userName", "email"]}
                 searchPlaceholder="Filter users..."
                 defaultSort={{ key: "total", direction: "desc" }}
                 pageSize={10}
@@ -446,7 +446,7 @@ const EmailAnalytics = () => {
               <PaginatedTable
                 data={transformedAgingData}
                 columns={agingColumns}
-                searchKey="userName"
+                searchKey={["userName", "email"]}
                 searchPlaceholder="Filter users..."
                 defaultSort={{ key: "total", direction: "desc" }}
                 pageSize={10}

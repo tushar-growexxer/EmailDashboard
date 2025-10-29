@@ -36,7 +36,10 @@ export class SessionManager {
     }
 
     if (!this.checkInterval) {
-      this.startActivityCheck();
+      // Delay the first check significantly to allow proper authentication setup
+      setTimeout(() => {
+        this.startActivityCheck();
+      }, 5000); // 5 second delay to ensure auth is fully established
     }
 
     // Always set initial activity timestamp on init
@@ -44,6 +47,7 @@ export class SessionManager {
     if (this.hasValidSession()) {
       this.updateLastActivity();
       this.setSessionStart();
+      console.log('SessionManager: Session initialized with fresh timestamps');
     }
   }
 
@@ -135,12 +139,18 @@ export class SessionManager {
    */
   static isSessionExpired() {
     const lastActivity = this.getLastActivity();
-    if (!lastActivity || !this.hasValidSession()) return true;
+    if (!lastActivity || !this.hasValidSession()) {
+      console.log('SessionManager: No valid session or last activity');
+      return true;
+    }
 
     const now = Date.now();
     const elapsed = now - lastActivity;
-    console.log(`Session check - Elapsed: ${elapsed}ms, Timeout: ${this.SESSION_TIMEOUT}ms`);
-    return elapsed >= this.SESSION_TIMEOUT;
+    const isExpired = elapsed >= this.SESSION_TIMEOUT;
+
+    console.log(`SessionManager: Session check - Last activity: ${new Date(lastActivity).toISOString()}, Now: ${new Date(now).toISOString()}, Elapsed: ${Math.floor(elapsed / 1000)}s, Timeout: ${Math.floor(this.SESSION_TIMEOUT / 1000)}s, Expired: ${isExpired}`);
+
+    return isExpired;
   }
 
   /**
@@ -194,9 +204,17 @@ export class SessionManager {
    */
   static checkSession() {
     if (this.isSessionExpired()) {
+      console.log('SessionManager: Session expired, calling expired callback');
       this.handleSessionExpired();
     } else if (this.shouldShowWarning()) {
+      console.log('SessionManager: Should show warning, calling warning callback');
       this.handleSessionWarning();
+    } else {
+      // Only log occasionally to avoid spam
+      const timeUntilExpiry = this.getTimeUntilExpiry();
+      if (timeUntilExpiry > 0 && timeUntilExpiry < 10 * 60 * 1000) { // Less than 10 minutes
+        console.log(`SessionManager: Session valid, ${Math.floor(timeUntilExpiry / 60000)} minutes remaining`);
+      }
     }
   }
 

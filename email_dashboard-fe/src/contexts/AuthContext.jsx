@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('AuthContext: Initializing authentication...');
         const storedUser = authService.getUser();
 
         // Initialize session management FIRST before any checks
@@ -45,11 +46,14 @@ export const AuthProvider = ({ children }) => {
         });
 
         if (storedUser) {
+          console.log('AuthContext: Found stored user:', storedUser);
           // For cookie-based auth, trust the stored user data
           // The backend will validate the actual token on API calls
           // Session expiry will be checked by the background interval
           setUser(storedUser);
           setToken(null); // Tokens are in httpOnly cookies
+        } else {
+          console.log('AuthContext: No stored user found');
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -59,6 +63,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken(null);
       } finally {
+        console.log('AuthContext: Initialization complete, isLoading = false');
         setIsLoading(false);
       }
     };
@@ -108,9 +113,19 @@ export const AuthProvider = ({ children }) => {
     setSessionWarning(null);
 
     try {
-      const result = await authService.login(email, password);
+      let result;
+
+      // Check if this is an LDAP login (contains @matangi.com)
+      if (email.includes('@matangi.com')) {
+        console.log('AuthContext: Detected LDAP login for:', email);
+        result = await authService.loginLdap(email, password);
+      } else {
+        console.log('AuthContext: Detected normal login for:', email);
+        result = await authService.login(email, password);
+      }
 
       if (result.success) {
+        console.log('AuthContext: Login successful, setting user:', result.user);
         setUser(result.user);
         setToken(null); // Tokens are in httpOnly cookies
 
@@ -120,9 +135,11 @@ export const AuthProvider = ({ children }) => {
 
         return { success: true };
       } else {
+        console.log('AuthContext: Login failed:', result.message);
         return { success: false, message: result.message };
       }
     } catch (error) {
+      console.error('AuthContext: Login error:', error);
       return {
         success: false,
         message: error.message || 'Login failed. Please try again.'

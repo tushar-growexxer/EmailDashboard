@@ -376,7 +376,18 @@ export class UserController {
         return;
       }
 
-      const user = await userService.updateUser(req.user.userId, { fullName, department });
+      // Check if this is an LDAP user
+      const isLdapUser = typeof req.user.userId === 'string' && req.user.userId.startsWith('ldap_');
+      
+      if (isLdapUser) {
+        res.status(403).json({
+          success: false,
+          message: 'LDAP users cannot update their profile through this endpoint. Profile data is managed through LDAP.',
+        });
+        return;
+      }
+
+      const user = await userService.updateUser(req.user.userId as number, { fullName, department });
 
       res.status(200).json({
         success: true,
@@ -456,9 +467,20 @@ export class UserController {
         return;
       }
 
+      // Check if this is an LDAP user
+      const isLdapUser = typeof req.user.userId === 'string' && req.user.userId.startsWith('ldap_');
+      
+      if (isLdapUser) {
+        res.status(403).json({
+          success: false,
+          message: 'LDAP users cannot change their password through this system. Please use your organization\'s password management system.',
+        });
+        return;
+      }
+
       // Verify current password and change to new password
       const result = await userService.changePassword(
-        req.user.userId,
+        req.user.userId as number,
         currentPassword,
         newPassword
       );

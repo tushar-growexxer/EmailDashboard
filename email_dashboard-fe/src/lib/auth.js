@@ -46,6 +46,51 @@ export class AuthService {
   }
 
   /**
+   * Login user with LDAP authentication
+   * Server will set httpOnly cookies with the JWT token
+   */
+  async loginLdap(email, password) {
+    try {
+      const response = await authApi.loginLdap({
+        email,
+        password,
+      });
+
+      if (response.success) {
+        console.log('LDAP Login successful, response:', response);
+
+        // IMPORTANT: Set timestamps BEFORE storing user data
+        // This prevents sessionManager from thinking the session is expired
+        const now = Date.now();
+        console.log('Setting session timestamps:', new Date(now).toISOString());
+        localStorage.setItem('last_activity', now.toString());
+        localStorage.setItem('session_start', now.toString());
+
+        // Store user data in localStorage for session management
+        tokenManager.setUser(response.user);
+        console.log('User data stored in localStorage:', response.user);
+
+        return {
+          success: true,
+          user: response.user, // Return user data for immediate UI update
+        };
+      } else {
+        console.log('LDAP Login failed:', response.message);
+        return {
+          success: false,
+          message: response.message,
+        };
+      }
+    } catch (error) {
+      console.error('LDAP Login error:', error);
+      return {
+        success: false,
+        message: error.message || 'LDAP login failed. Please try again.',
+      };
+    }
+  }
+
+  /**
    * Logout user
    * Server will clear httpOnly cookies
    */

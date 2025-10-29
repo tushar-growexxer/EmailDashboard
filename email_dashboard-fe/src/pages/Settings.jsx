@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Users, Settings as SettingsIcon, Bell, UserPlus, Edit, Trash2, Key, Eye, KeyRound } from "lucide-react";
+import { Users, Settings as SettingsIcon, RefreshCw, Edit, CheckCircle, XCircle, User, Shield, ShieldCheck, ShieldOff, UserCog, Save, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import { FormDialog, ConfirmDialog } from "../components/ui/Dialog";
+import { FormDialog } from "../components/ui/Dialog";
 import { Avatar, AvatarFallback } from "../components/ui/Avatar";
 import { Select } from "../components/ui/Select";
 import { TableSkeleton } from "../components/ui/Skeleton";
@@ -15,33 +13,31 @@ import {
   formatDateTimeWithAMPM,
 } from "../utils/dashboardUtils";
 import { useAuth } from "../contexts/AuthContext";
-import { userApi } from "../api/index";
+import { ldapSyncApi } from "../api/index";
 import { cn } from "../lib/utils";
 
 const Settings = () => {
-  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("users");
-  const [createUserModal, setCreateUserModal] = useState(false);
-  const [resetPasswordModal, setResetPasswordModal] = useState(false);
-  const [deleteUserModal, setDeleteUserModal] = useState(false);
+  const [editUserModal, setEditUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [resetPasswordError, setResetPasswordError] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [formData, setFormData] = useState({
-    email: "",
-    fullName: "",
-    password: "",
+  const [lastSynced, setLastSynced] = useState(null);
+  const [editFormData, setEditFormData] = useState({
     role: "user",
-    department: "Sales",
+    isActive: false,
   });
+
+  const tabs = [
+    { id: "users", label: "User Management", icon: Users },
+    { id: "email", label: "Email Configuration", icon: SettingsIcon },
+  ];
 
   useEffect(() => {
     if (activeTab === "users") {
@@ -49,13 +45,25 @@ const Settings = () => {
     }
   }, [activeTab]);
 
-  const fetchUsers = async () => {
-    setIsLoadingUsers(true);
+  const fetchUsers = async (forceRefresh = false) => {
+    if (forceRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoadingUsers(true);
+    }
     setErrorMessage("");
     try {
-      const result = await userApi.getAllUsers();
+      const result = await ldapSyncApi.getSyncedUsers(forceRefresh);
       if (result.success) {
         setUsers(result.users);
+        // Get the most recent syncedAt timestamp
+        if (result.users.length > 0) {
+          const mostRecent = result.users.reduce((latest, user) => {
+            const userSynced = new Date(user.syncedAt);
+            return userSynced > latest ? userSynced : latest;
+          }, new Date(0));
+          setLastSynced(mostRecent);
+        }
       } else {
         setErrorMessage(result.message || "Failed to fetch users");
       }
@@ -63,168 +71,78 @@ const Settings = () => {
       setErrorMessage(error.message || "Failed to fetch users");
     } finally {
       setIsLoadingUsers(false);
+      setIsRefreshing(false);
     }
   };
 
-  const departments = [
-    { id: "sales", label: "Sales" },
-    { id: "operations", label: "Operations" },
-    { id: "management", label: "Management" },
-    { id: "SAP", label: "SAP" },
-  ];
+  const handleRefreshUsers = () => {
+    fetchUsers(true);
+  };
 
-  const tabs = [
-    { id: "users", label: "User Management", icon: Users },
-    { id: "email", label: "Email Configuration", icon: SettingsIcon },
-    // { id: "notifications", label: "Notifications", icon: Bell },
-  ];
-
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+  const handleSyncUsers = async () => {
+    setIsSyncing(true);
     setErrorMessage("");
     setSuccessMessage("");
+    try {
+      const result = await ldapSyncApi.syncUsers();
+      if (result.success) {
+        setSuccessMessage(
+          result.message ||
+            `Synced ${result.data?.totalUsers || 0} users successfully`
+        );
+        await fetchUsers();
+      } else {
+        setErrorMessage(result.message || "Failed to sync users");
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "Failed to sync users");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const handleCreateUser = async () => {
-    setIsCreatingUser(true);
+  const handleOpenEditUser = (user) => {
+    setSelectedUser(user);
+    setEditFormData({
+      role: user.role || "user",
+      isActive: user.isActive || false,
+    });
+    setEditUserModal(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+
+    setIsUpdating(true);
     setErrorMessage("");
-    setSuccessMessage("");
-
-    // Validate form data
-    if (!formData.email || !formData.fullName || !formData.password) {
-      setErrorMessage("Email, full name, and password are required");
-      setIsCreatingUser(false);
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setErrorMessage("Password must be at least 8 characters long");
-      setIsCreatingUser(false);
-      return;
-    }
 
     try {
-      const result = await userApi.createUser(formData);
+      const result = await ldapSyncApi.updateUserStatus(
+        selectedUser.sAMAccountName,
+        editFormData
+      );
+
       if (result.success) {
-        setSuccessMessage("User created successfully!");
-        setCreateUserModal(false);
-        // Reset form
-        setFormData({
-          email: "",
-          fullName: "",
-          password: "",
-          role: "user",
-          department: "Sales",
-        });
-        // Refresh users list
-        fetchUsers();
-      } else {
-        setErrorMessage(result.message || "Failed to create user");
-      }
-    } catch (error) {
-      setErrorMessage(error.message || "Failed to create user. Please try again.");
-    } finally {
-      setIsCreatingUser(false);
-    }
-  };
-
-  const handleViewUser = (userId) => {
-    // Navigate to the profile page with the user ID as state
-    navigate("/profile", { state: { userId } });
-  };
-
-  const handleOpenDeleteUser = (user) => {
-    setSelectedUser(user);
-    setDeleteUserModal(true);
-  };
-
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-
-    setIsDeletingUser(true);
-    try {
-      const result = await userApi.deleteUser(selectedUser.id);
-      if (result.success) {
-        setSuccessMessage(`User ${selectedUser.fullName} deleted successfully!`);
-        setDeleteUserModal(false);
+        setSuccessMessage(
+          `User ${selectedUser.displayName} updated successfully!`
+        );
+        setEditUserModal(false);
         setSelectedUser(null);
-        fetchUsers();
+        await fetchUsers();
       } else {
-        setErrorMessage(result.message || "Failed to delete user");
-        setDeleteUserModal(false);
+        setErrorMessage(result.message || "Failed to update user");
       }
     } catch (error) {
-      setErrorMessage(error.message || "Failed to delete user");
-      setDeleteUserModal(false);
+      setErrorMessage(error.message || "Failed to update user");
     } finally {
-      setIsDeletingUser(false);
+      setIsUpdating(false);
     }
-  };
-
-  const generateRandomPassword = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
-  const generatePassword = () => {
-    setFormData({ ...formData, password: generateRandomPassword() });
-  };
-
-  const generateResetPassword = () => {
-    setNewPassword(generateRandomPassword());
-  };
-
-  const handleResetPassword = async () => {
-    if (!selectedUser) return;
-
-    setIsResettingPassword(true);
-    setResetPasswordError("");
-
-    // Validate password
-    if (!newPassword) {
-      setResetPasswordError("Password is required");
-      setIsResettingPassword(false);
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setResetPasswordError("Password must be at least 8 characters long");
-      setIsResettingPassword(false);
-      return;
-    }
-
-    try {
-      const result = await userApi.resetUserPassword(selectedUser.id, newPassword);
-      if (result.success) {
-        setSuccessMessage(`Password reset successfully for ${selectedUser.fullName}!`);
-        setResetPasswordModal(false);
-        setSelectedUser(null);
-        setNewPassword("");
-      } else {
-        setResetPasswordError(result.message || "Failed to reset password");
-      }
-    } catch (error) {
-      setResetPasswordError(error.message || "Failed to reset password");
-    } finally {
-      setIsResettingPassword(false);
-    }
-  };
-
-  const handleOpenResetPassword = (user) => {
-    setSelectedUser(user);
-    setNewPassword("");
-    setResetPasswordError("");
-    setResetPasswordModal(true);
   };
 
   // Column definitions for Users table
   const userColumns = [
     {
-      key: "fullName",
+      key: "displayName",
       header: "User",
       sortable: true,
       className: "text-left min-w-[200px]",
@@ -233,12 +151,12 @@ const Settings = () => {
         <div className="flex items-center">
           <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {getInitials(user.fullName)}
+              {getInitials(user.displayName)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1 pl-2">
-            <p className="font-medium truncate text-sm sm:text-base">{user.fullName}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            <p className="font-medium truncate text-sm sm:text-base">{user.displayName}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.sAMAccountName}</p>
           </div>
         </div>
       ),
@@ -247,19 +165,45 @@ const Settings = () => {
       key: "role",
       header: "Role",
       sortable: true,
-      className: "min-w-[80px]",
+      className: "min-w-[100px]",
       render: (user) => (
-        <Badge variant={user.role === "admin" ? "default" : "secondary"} className="text-xs">
+        <Badge
+          variant={
+            user.role === "admin"
+              ? "default"
+              : user.role === "manager"
+              ? "secondary"
+              : "outline"
+          }
+          className="text-xs capitalize"
+        >
           {user.role}
         </Badge>
       ),
     },
     {
-      key: "department",
-      header: "Department",
+      key: "isActive",
+      header: "Status",
       sortable: true,
       className: "min-w-[100px]",
-      render: (user) => <span className="text-sm">{user.department || "N/A"}</span>,
+      render: (user) => (
+        <Badge
+          variant={user.isActive ? "green" : "red"}
+          className="text-xs"
+        >
+          {user.isActive ? (
+            <>
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Active
+            </>
+          ) : (
+            <>
+              <XCircle className="h-3 w-3 mr-1" />
+              Inactive
+            </>
+          )}
+        </Badge>
+      ),
     },
     {
       key: "lastLogin",
@@ -268,47 +212,38 @@ const Settings = () => {
       className: "min-w-[140px]",
       render: (user) => (
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {formatDateTimeWithAMPM(user.lastLogin)}
+          {user.lastLogin ? formatDateTimeWithAMPM(user.lastLogin) : "Never"}
+        </span>
+      ),
+    },
+    {
+      key: "syncedAt",
+      header: "Synced At",
+      sortable: true,
+      className: "min-w-[140px]",
+      render: (user) => (
+        <span className="text-xs sm:text-sm text-muted-foreground">
+          {user.syncedAt ? formatDateTimeWithAMPM(user.syncedAt) : "Never"}
         </span>
       ),
     },
     {
       key: "actions",
       header: "Actions",
-      className: "text-right min-w-[100px]",
+      className: "text-right min-w-[80px]",
       cellClassName: "text-right",
       render: (user) => (
         <div className="flex items-center justify-end gap-1 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => handleViewUser(user.id)}
-            title="View Profile"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          {currentUser?.role === "admin" && currentUser?.id !== user.id && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-blue-600 dark:text-blue-400"
-                onClick={() => handleOpenResetPassword(user)}
-                title="Reset Password"
-              >
-                <KeyRound className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive"
-                onClick={() => handleOpenDeleteUser(user)}
-                title="Delete User"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </>
+          {currentUser?.role === "admin" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleOpenEditUser(user)}
+              title="Edit User"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
           )}
         </div>
       ),
@@ -354,13 +289,13 @@ const Settings = () => {
             <div>
               <h2 className="text-xl font-semibold">User Management</h2>
               <p className="text-sm text-muted-foreground">
-                Add, edit, and manage user accounts
+                Manage user access and permissions
               </p>
             </div>
             {currentUser?.role === "admin" && (
-              <Button onClick={() => setCreateUserModal(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add New User
+              <Button onClick={handleSyncUsers} disabled={isSyncing}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Syncing..." : "Sync Users"}
               </Button>
             )}
           </div>
@@ -377,20 +312,51 @@ const Settings = () => {
           )}
 
           <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Users ({users.length})
+                  </CardTitle>
+                  <br />
+                  <CardDescription>
+                    Manage user roles and access permissions
+                    {lastSynced && (
+                      <span className="block mt-1 text-xs">
+                        Last synced: {formatDateTimeWithAMPM(lastSynced)}
+                      </span>
+                    )}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRefreshUsers}
+                  disabled={isRefreshing || isLoadingUsers}
+                  title="Refresh user list"
+                  className="h-8 w-8"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent className="p-0">
               {isLoadingUsers ? (
                 <div className="p-6">
                   <TableSkeleton rows={5} columns={5} />
                 </div>
               ) : users.length === 0 ? (
-                <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">No users found</div>
+                <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">
+                  No users found. Click "Sync Users" to load users.
+                </div>
               ) : (
                 <PaginatedTable
                   data={users}
                   columns={userColumns}
-                  searchKey="fullName"
-                  searchPlaceholder="Search users..."
-                  defaultSort={{ key: "department", direction: "asc" }}
+                  searchKey={["displayName", "sAMAccountName"]}
+                  searchPlaceholder="Search by name or username..."
+                  defaultSort={{ key: "isActive", direction: "desc" }}
                   pageSize={10}
                 />
               )}
@@ -411,255 +377,180 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Email Domain</label>
-                <Input placeholder="company.com" />
+                <input className="w-full px-3 py-2 border rounded-md" placeholder="company.com" disabled />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Refresh Schedule</label>
-                <Select>
+                <select className="w-full px-3 py-2 border rounded-md" disabled>
                   <option>Daily at 7:00 AM</option>
-                  <option>Every 6 hours</option>
-                  <option>Every 12 hours</option>
-                  <option>Manual only</option>
-                </Select>
+                </select>
+              </div>
+              <Button disabled>Save Configuration</Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      <FormDialog
+        open={editUserModal}
+        onOpenChange={setEditUserModal}
+        title={
+          <div className="flex items-center gap-2">
+            <UserCog className="h-5 w-5 text-primary" />
+            <span>Edit User</span>
+          </div>
+        }
+        description={`Update permissions for ${selectedUser?.displayName}`}
+        maxWidth="max-w-md"
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditUserModal(false);
+                setSelectedUser(null);
+              }}
+              className="gap-2"
+              disabled={isUpdating}
+            >
+              <X className="h-4 w-4" />
+              <span>Cancel</span>
+            </Button>
+            <Button
+              onClick={handleUpdateUser}
+              disabled={isUpdating}
+              className="gap-2"
+            >
+              {isUpdating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span>Save Changes</span>
+                </>
+              )}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6 py-2">
+          {/* User Info Card */}
+          <div className="bg-muted/30 p-4 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Email Retention Period</label>
-                <Select>
-                  <option>30 days</option>
-                  <option>60 days</option>
-                  <option>90 days</option>
-                  <option>1 year</option>
-                </Select>
+                <h4 className="font-medium text-foreground">{selectedUser?.displayName}</h4>
+                <p className="text-xs text-muted-foreground">{selectedUser?.sAMAccountName}</p>
               </div>
-              <Button>Save Configuration</Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Notifications Tab */}
-      {activeTab === "notifications" && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Notification Settings</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle>Alert Thresholds</CardTitle>
-              <CardDescription>Configure when to receive notifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">Critical Aging Emails</p>
-                  <p className="text-sm text-muted-foreground">Alert when emails age beyond 7 days</p>
-                </div>
-                <input type="checkbox" defaultChecked className="w-5 h-5" />
-              </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">High Volume Alerts</p>
-                  <p className="text-sm text-muted-foreground">Notify when unreplied count exceeds threshold</p>
-                </div>
-                <input type="checkbox" defaultChecked className="w-5 h-5" />
-              </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">Sentiment Warnings</p>
-                  <p className="text-sm text-muted-foreground">Alert on negative sentiment trends</p>
-                </div>
-                <input type="checkbox" className="w-5 h-5" />
-              </div>
-              <Button>Save Preferences</Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Create User Modal */}
-      <FormDialog
-        open={createUserModal}
-        onOpenChange={setCreateUserModal}
-        title="Create New User"
-        description="Add a new user to the system"
-        maxWidth="max-w-2xl"
-        footer={
-          <>
-            {errorMessage && (
-              <div className="flex-1 text-xs sm:text-sm text-red-600 dark:text-red-400">
-                {errorMessage}
-              </div>
-            )}
-            <Button 
-              variant="ghost" 
-              onClick={() => {
-                setCreateUserModal(false);
-                setErrorMessage("");
-                setSuccessMessage("");
-              }} 
-              className="text-sm"
-              disabled={isCreatingUser}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCreateUser} 
-              disabled={isCreatingUser} 
-              className="text-sm"
-            >
-              {isCreatingUser ? "Creating..." : "Create User"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-2">Email Address *</label>
-            <Input
-              type="email"
-              placeholder="user@company.com"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              className="text-sm sm:text-base"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              User will login with this email
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-2">Full Name *</label>
-            <Input
-              placeholder="John Doe"
-              value={formData.fullName}
-              onChange={(e) => handleInputChange("fullName", e.target.value)}
-              className="text-sm sm:text-base"
-            />
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-2">Initial Password *</label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="password"
-                placeholder="Enter secure password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                className="flex-1 text-sm sm:text-base"
-              />
-              <Button variant="outline" onClick={generatePassword} className="text-sm whitespace-nowrap">
-                Generate
-              </Button>
             </div>
           </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-2">Role</label>
-            <Select
-              value={formData.role}
-              onChange={(e) => handleInputChange("role", e.target.value)}
-              className="text-sm sm:text-base"
-            >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </Select>
+
+          {/* Role Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Shield className="h-4 w-4 text-primary" />
+              <span>Role</span>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-1 mb-2">
+              Select the user's role to define their permissions
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setEditFormData({ ...editFormData, role: 'user' })}
+                className={`p-3 rounded-lg border transition-all ${editFormData.role === 'user' 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-border hover:bg-muted/50'}`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <User className={`h-5 w-5 ${editFormData.role === 'user' ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className={`text-sm font-medium ${editFormData.role === 'user' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    User
+                  </span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditFormData({ ...editFormData, role: 'manager' })}
+                className={`p-3 rounded-lg border transition-all ${editFormData.role === 'manager' 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-border hover:bg-muted/50'}`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <Shield className={`h-5 w-5 ${editFormData.role === 'manager' ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className={`text-sm font-medium ${editFormData.role === 'manager' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    Manager
+                  </span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditFormData({ ...editFormData, role: 'admin' })}
+                className={`p-3 rounded-lg border transition-all ${editFormData.role === 'admin' 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-border hover:bg-muted/50'}`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <ShieldCheck className={`h-5 w-5 ${editFormData.role === 'admin' ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className={`text-sm font-medium ${editFormData.role === 'admin' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    Admin
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-2">Department</label>
-            <Select
-              value={formData.department}
-              onChange={(e) => handleInputChange("department", e.target.value)}
-              className="text-sm sm:text-base"
-            >
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>{department.label}</option>
-              ))}
-            </Select>
+
+          {/* Status Toggle */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              {editFormData.isActive ? (
+                <>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span>Account Status</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 text-red-500" />
+                  <span>Account Status</span>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground -mt-1 mb-2">
+              {editFormData.isActive 
+                ? 'User can sign in and access the system' 
+                : 'User will be blocked from signing in'}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setEditFormData({ ...editFormData, isActive: true })}
+                className={`flex-1 py-2 px-4 rounded-lg border transition-all flex items-center justify-center gap-2 ${editFormData.isActive 
+                  ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200' 
+                  : 'border-border hover:bg-muted/50'}`}
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span>Active</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditFormData({ ...editFormData, isActive: false })}
+                className={`flex-1 py-2 px-4 rounded-lg border transition-all flex items-center justify-center gap-2 ${!editFormData.isActive 
+                  ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200' 
+                  : 'border-border hover:bg-muted/50'}`}
+              >
+                <XCircle className="h-4 w-4" />
+                <span>Inactive</span>
+              </button>
+            </div>
           </div>
         </div>
       </FormDialog>
-
-      {/* Reset Password Modal */}
-      <FormDialog
-        open={resetPasswordModal}
-        onOpenChange={setResetPasswordModal}
-        title="Reset Password"
-        description={`Reset password for ${selectedUser?.fullName}`}
-        maxWidth="max-w-lg"
-        footer={
-          <>
-            {resetPasswordError && (
-              <div className="flex-1 text-xs sm:text-sm text-red-600 dark:text-red-400">
-                {resetPasswordError}
-              </div>
-            )}
-            <Button 
-              variant="ghost" 
-              onClick={() => {
-                setResetPasswordModal(false);
-                setSelectedUser(null);
-                setNewPassword("");
-                setResetPasswordError("");
-              }} 
-              className="text-sm"
-              disabled={isResettingPassword}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleResetPassword} 
-              disabled={isResettingPassword} 
-              className="text-sm"
-            >
-              {isResettingPassword ? "Resetting..." : "Reset Password"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-2">New Password *</label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="text"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => {
-                  setNewPassword(e.target.value);
-                  setResetPasswordError("");
-                }}
-                className="flex-1 text-sm sm:text-base"
-              />
-              <Button variant="outline" onClick={generateResetPassword} className="text-sm whitespace-nowrap">
-                Generate
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Password must be at least 8 characters long
-            </p>
-          </div>
-        </div>
-      </FormDialog>
-
-      {/* Delete User Confirmation */}
-      <ConfirmDialog
-        open={deleteUserModal}
-        onOpenChange={setDeleteUserModal}
-        title="Delete User"
-        description={
-          <>
-            Are you sure you want to delete {selectedUser?.fullName}?
-            <br />
-            This action cannot be undone.
-          </>
-        }
-        icon={Trash2}
-        iconClassName="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-        confirmText="Delete User"
-        cancelText="Cancel"
-        onConfirm={handleDeleteUser}
-        onCancel={() => {
-          setDeleteUserModal(false);
-          setSelectedUser(null);
-        }}
-        variant="destructive"
-        isLoading={isDeletingUser}
-      />
     </div>
   );
 };

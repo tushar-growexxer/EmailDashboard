@@ -12,6 +12,13 @@ class AuthApiService extends BaseApiService {
   }
 
   /**
+   * Login user with LDAP authentication
+   */
+  async loginLdap(credentials) {
+    return this.post('/auth/ldap-login', credentials);
+  }
+
+  /**
    * Logout user
    */
   async logout() {

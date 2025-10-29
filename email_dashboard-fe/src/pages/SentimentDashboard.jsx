@@ -365,6 +365,7 @@ const SentimentDashboard = () => {
                       ? (selectedDetailCustomer || mockData.customers[0])
                       : mockData.customers[0]} - Sentiment Trends
                   </CardTitle>
+                  <br />
                   <CardDescription>
                     {useLast14Days ? 'Daily sentiment over last 14 days' : `${timePeriod} sentiment trends`}
                     <br />

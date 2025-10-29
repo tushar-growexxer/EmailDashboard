@@ -7,7 +7,7 @@ import logger from '../config/logger';
  * Interface for JWT payload
  */
 export interface JWTPayload {
-  userId: number;
+  userId: number | string; // Allow string for LDAP users
   email: string;
   role: 'admin' | 'user';
   iat?: number;
@@ -67,9 +67,26 @@ export const authenticateToken = async (
     // Verify the token
     const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
 
-    // Verify that the user still exists in the database
-    const user = await userModel.findById(decoded.userId);
+    // Check if this is an LDAP user (string ID starting with "ldap_")
+    const isLdapUser = typeof decoded.userId === 'string' && decoded.userId.startsWith('ldap_');
+
+    if (isLdapUser) {
+      logger.info(`Authentication: LDAP user detected - ${decoded.email}`);
+      // For LDAP users, we don't check SAP HANA database
+      // Just use the data from the token
+      req.user = {
+        userId: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+      };
+      next();
+      return;
+    }
+
+    // For regular users, verify that the user still exists in the database
+    const user = await userModel.findById(decoded.userId as number);
     if (!user) {
+      logger.warn(`Authentication: User not found in database - UserID: ${decoded.userId}, Email: ${decoded.email}`);
       res.status(401).json({
         success: false,
         message: 'User not found or token is invalid',

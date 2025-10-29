@@ -29,7 +29,16 @@ const Login = () => {
     setSuccess("");
 
     try {
-      const result = await login(formData.email, formData.password);
+      // Unified login - system will auto-detect if it's LDAP or regular
+      let loginEmail = formData.email;
+      
+      // If no @ symbol, append domain for convenience
+      if (!formData.email.includes('@')) {
+        loginEmail = `${formData.email}@matangi.com`;
+      }
+
+      // Call login through AuthContext
+      const result = await login(loginEmail, formData.password);
 
       if (result.success) {
         setSuccess("Login successful! Redirecting...");
@@ -80,15 +89,6 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Show redirect message if user was redirected from a protected route */}
-            {/* {location.state?.from && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center gap-2 text-blue-700">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm">
-                  Please log in to access <strong>{location.state.from.pathname}</strong>
-                </span>
-              </div>
-            )} */}
 
             {/* Error Message */}
             {error && (
@@ -109,15 +109,15 @@ const Login = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
-                  Email Address
+                  Username or Email
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     name="email"
-                    type="email"
-                    placeholder="Enter your email"
+                    type="text"
+                    placeholder="Enter your username or email"
                     value={formData.email}
                     onChange={handleChange}
                     className="pl-10"

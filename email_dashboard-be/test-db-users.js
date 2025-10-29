@@ -1,13 +1,29 @@
 // Test script to check users in SAP HANA database
-require('dotenv').config({ path: './email_dashboard-be/.env' });
+require('dotenv').config({ path: __dirname + '/.env' });
 const hdb = require('hdb');
+const path = require('path');
+
+// Load environment variables
+const envPath = path.resolve(__dirname, '.env');
+console.log(`Loading environment from: ${envPath}`);
 
 const config = {
   host: process.env.SAP_HANA_VPN_HOST || process.env.SAP_HANA_HOST,
-  port: parseInt(process.env.SAP_HANA_PORT),
+  port: parseInt(process.env.SAP_HANA_PORT || '30015'),
   user: process.env.SAP_HANA_USER,
   password: process.env.SAP_HANA_PASSWORD,
 };
+
+// Validate required environment variables
+const requiredVars = ['SAP_HANA_HOST', 'SAP_HANA_PORT', 'SAP_HANA_USER', 'SAP_HANA_PASSWORD', 'SAP_HANA_SCHEMA', 'SAP_HANA_USERS_TABLE'];
+const missingVars = requiredVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:');
+  missingVars.forEach(varName => console.error(`  - ${varName}`));
+  console.error('\nPlease check your .env file');
+  process.exit(1);
+}
 
 console.log('Connecting to SAP HANA...');
 console.log(`Host: ${config.host}:${config.port}`);

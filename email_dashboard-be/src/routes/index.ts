@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
 import dashboardRoutes from './dashboard.routes';
+import ldapSyncRoutes from './ldapSync.routes';
 
 const router: Router = Router();
 
@@ -11,15 +12,16 @@ const router: Router = Router();
  * @access  Public
  */
 router.get('/', (_req: Request, res: Response) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Email Dashboard API',
     version: process.env.API_VERSION || 'v1',
     endpoints: {
       auth: '/auth',
       users: '/users',
-      dashboard: '/dashboard'
-    }
+      dashboard: '/dashboard',
+      ldapSync: '/ldap-sync',
+    },
   });
 });
 
@@ -27,7 +29,6 @@ router.get('/', (_req: Request, res: Response) => {
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/ldap-sync', ldapSyncRoutes);
 
 export default router;
-
-
