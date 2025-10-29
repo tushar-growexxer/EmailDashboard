@@ -16,4 +16,23 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate React and React-DOM
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Separate chart libraries if you have them
+          'charts': ['recharts'],
+          // UI components
+          'ui-vendor': ['lucide-react', '@radix-ui/react-dialog'],
+        },
+      },
+    },
+    // Increase chunk size warning limit since we're splitting properly
+    chunkSizeWarningLimit: 600,
+    // Use esbuild for faster minification
+    minify: 'esbuild',
+    target: 'esnext',
+  },
 })
