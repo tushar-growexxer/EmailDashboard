@@ -288,7 +288,7 @@ export function calculateHoursUnreplied(emailDate) {
   if (!emailDate) return 0;
 
   const emailDateTime = new Date(emailDate);
-  const now = new Date();
+  const now = new Date().setHours(7,0,0,0);
 
   // Check if the date is valid
   if (isNaN(emailDateTime.getTime())) return 0;
@@ -319,7 +319,8 @@ export function formatHoursUnreplied(hours) {
   } else {
     const weeks = Math.floor(hours / 168);
     const days = Math.floor((hours % 168) / 24);
-    return days > 0 ? `${weeks}w ${days}d` : `${weeks} weeks`;
+    const remainingHours = Math.floor(hours % 24);
+    return `${weeks}w ${days}d ${remainingHours}h`;
   }
 }
 

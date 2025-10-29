@@ -345,7 +345,7 @@ const EmailAnalytics = () => {
           </p>
           {lastFetched && (
             <p className="text-sm text-muted-foreground mt-2">
-              Last refreshed: {formatDateTimeWithAMPM(lastFetched)}
+              Last refreshed: {formatDateTimeWithAMPM(new Date().setHours(7,0,0,0))}
             </p>
           )}
         </div>
@@ -468,6 +468,9 @@ const EmailAnalytics = () => {
             <DialogTitle>Unreplied Emails - {selectedCategory}</DialogTitle>
             <DialogDescription>
               User: {selectedUserData?.full_name} ({getEmailsForCategory().length} emails)
+            </DialogDescription>
+            <DialogDescription>
+              Unreplied time is measured as duration from email receipt to 7 AM refresh.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-3">

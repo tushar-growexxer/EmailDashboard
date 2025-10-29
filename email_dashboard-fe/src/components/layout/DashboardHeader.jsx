@@ -73,17 +73,13 @@ const DashboardHeader = () => {
           </button>
 
           {/* User Avatar */}
-          <button
-            onClick={() => navigate("/profile")}
-            className="w-10 h-10 rounded-full hover:ring-2 hover:ring-primary/20 transition-all hover:scale-105 cursor-pointer"
-            aria-label="Profile"
-          >
+          <div className="w-10 h-10 rounded-full">
             <Avatar className="w-10 h-10 border-2 border-border">
               <AvatarFallback className="bg-indigo-600 text-white text-sm">
                 {getInitials(user?.fullName || "User")}
               </AvatarFallback>
             </Avatar>
-          </button>
+          </div>
         </div>
       </div>
     </header>
