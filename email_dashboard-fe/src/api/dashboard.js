@@ -1,8 +1,8 @@
-import BaseApiService from './base.js';
+import BaseApiService from "./base.js";
 
 /**
  * Dashboard API service for MongoDB-backed analytics
- * 
+ *
  * This service provides access to email analytics data stored in MongoDB
  * with intelligent caching on the backend (24-hour cache, auto-refresh at 7:30 AM)
  */
@@ -12,7 +12,7 @@ class DashboardApiService extends BaseApiService {
    * @returns {Promise<Object>} MongoDB connection status
    */
   async healthCheck() {
-    return this.get('/dashboard/health');
+    return this.get("/dashboard/health");
   }
 
   /**
@@ -21,7 +21,7 @@ class DashboardApiService extends BaseApiService {
    * @returns {Promise<Object>} Response dashboard data for all users
    */
   async getResponseDashboard() {
-    return this.get('/dashboard/response');
+    return this.get("/dashboard/response");
   }
 
   /**
@@ -30,7 +30,7 @@ class DashboardApiService extends BaseApiService {
    * @returns {Promise<Object>} Aging dashboard data for all users
    */
   async getAgingDashboard() {
-    return this.get('/dashboard/aging');
+    return this.get("/dashboard/aging");
   }
 
   /**
@@ -52,12 +52,22 @@ class DashboardApiService extends BaseApiService {
   }
 
   /**
+   * Get Sentiment Dashboard data (Dashboard 3)
+   * Includes daily, weekly, and user domain sentiment scores
+   * Cached on backend for 24 hours
+   * @returns {Promise<Object>} Sentiment dashboard data
+   */
+  async getSentimentDashboard() {
+    return this.get("/dashboard/sentiment");
+  }
+
+  /**
    * Manually refresh cache (admin only)
    * Forces a fresh fetch from MongoDB and updates cache
    * @returns {Promise<Object>} Refresh confirmation
    */
   async refreshCache() {
-    return this.post('/dashboard/refresh-cache');
+    return this.post("/dashboard/refresh-cache");
   }
 
   /**
@@ -65,17 +75,17 @@ class DashboardApiService extends BaseApiService {
    * @returns {Promise<Object>} Cache status information
    */
   async getCacheStatus() {
-    return this.get('/dashboard/cache-status');
+    return this.get("/dashboard/cache-status");
   }
 
   // Legacy endpoints (keeping for backward compatibility)
-  
+
   /**
    * Get dashboard statistics
    * @deprecated Use getResponseDashboard() or getAgingDashboard() instead
    */
   async getStatistics() {
-    return this.get('/dashboard/statistics');
+    return this.get("/dashboard/statistics");
   }
 
   /**
@@ -90,7 +100,7 @@ class DashboardApiService extends BaseApiService {
    * Get email analytics
    * @deprecated Use getResponseDashboard() or getAgingDashboard() instead
    */
-  async getEmailAnalytics(timeframe = '7d') {
+  async getEmailAnalytics(timeframe = "7d") {
     return this.get(`/dashboard/analytics?timeframe=${timeframe}`);
   }
 
@@ -99,7 +109,7 @@ class DashboardApiService extends BaseApiService {
    * @deprecated
    */
   async getUserActivity() {
-    return this.get('/dashboard/activity');
+    return this.get("/dashboard/activity");
   }
 
   /**

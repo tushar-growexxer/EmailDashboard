@@ -9,6 +9,7 @@ const quickOptions = [
   { value: "Last Week", label: "Last Week" },
   { value: "Last Month", label: "Last Month" },
   { value: "Past 3 Months", label: "Past 3 Months" },
+  { value: "Current Fiscal Year", label: "Current Fiscal Year" },
   { value: "Last Fiscal Year", label: "Last Fiscal Year" },
 ];
 

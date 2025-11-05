@@ -174,6 +174,28 @@ class DashboardController {
   }
 
   /**
+   * Get Dashboard 3 (Sentiment Dashboard) data
+   * GET /api/dashboard/sentiment
+   */
+  async getDashboard3(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      logger.info('GET /api/dashboard/sentiment - Fetching dashboard 3 data');
+      
+      const data = await dashboardService.getDashboard3Data();
+
+      res.status(200).json({
+        success: true,
+        message: 'Dashboard 3 data retrieved successfully',
+        data: data,
+        cached: true,
+      });
+    } catch (error) {
+      logger.error('Error in getDashboard3 controller:', error);
+      next(error);
+    }
+  }
+
+  /**
    * Health check endpoint for MongoDB connection
    * GET /api/dashboard/health
    */

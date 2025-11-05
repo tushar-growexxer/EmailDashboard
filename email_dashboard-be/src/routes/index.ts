@@ -3,6 +3,7 @@ import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
 import dashboardRoutes from './dashboard.routes';
 import ldapSyncRoutes from './ldapSync.routes';
+import customerSalesRoutes from './customerSales.routes';
 
 const router: Router = Router();
 
@@ -21,6 +22,7 @@ router.get('/', (_req: Request, res: Response) => {
       users: '/users',
       dashboard: '/dashboard',
       ldapSync: '/ldap-sync',
+      customers: '/customers',
     },
   });
 });
@@ -30,5 +32,6 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/ldap-sync', ldapSyncRoutes);
+router.use('/customers', customerSalesRoutes);
 
 export default router;

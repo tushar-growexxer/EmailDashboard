@@ -15,7 +15,7 @@ const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : ['http://localhost:5173', 'http://192.168.10.6:5173', 'http://192.168.56.1:5173'];
 
-console.log('🔒 CORS Configuration:');
+console.log('CORS Configuration:');
 console.log('   Allowed Origins:', allowedOrigins);
 
 app.use(
@@ -23,15 +23,14 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) {
-        console.log('✅ CORS: Allowing request with no origin');
         return callback(null, true);
       }
 
       if (allowedOrigins.includes(origin)) {
-        console.log(`✅ CORS: Allowed origin: ${origin}`);
+        console.log(`CORS: Allowed origin: ${origin}`);
         callback(null, true);
       } else {
-        console.error(`❌ CORS: Blocked origin: ${origin}`);
+        console.error(`CORS: Blocked origin: ${origin}`);
         console.error(`   Expected one of: ${allowedOrigins.join(', ')}`);
         callback(new Error(`Not allowed by CORS. Origin '${origin}' is not in the allowed list.`));
       }

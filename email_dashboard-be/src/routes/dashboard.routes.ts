@@ -31,6 +31,9 @@ router.get('/response/user/:userId', dashboardController.getDashboard1ByUser.bin
 router.get('/aging', dashboardController.getDashboard2.bind(dashboardController));
 router.get('/aging/user/:userId', dashboardController.getDashboard2ByUser.bind(dashboardController));
 
+// Dashboard 3 (Sentiment Dashboard) routes
+router.get('/sentiment', dashboardController.getDashboard3.bind(dashboardController));
+
 // Cache management routes
 router.post('/refresh-cache', dashboardController.refreshCache.bind(dashboardController));
 router.get('/cache-status', dashboardController.getCacheStatus.bind(dashboardController));

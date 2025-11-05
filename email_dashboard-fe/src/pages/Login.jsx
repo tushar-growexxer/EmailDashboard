@@ -110,7 +110,7 @@ const Login = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
-                  Username or Email
+                  Username
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -118,7 +118,7 @@ const Login = () => {
                     id="email"
                     name="email"
                     type="text"
-                    placeholder="Enter your username or email"
+                    placeholder="Enter your username"
                     value={formData.email}
                     onChange={handleChange}
                     className="pl-10"
@@ -162,14 +162,6 @@ const Login = () => {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-input text-primary focus:ring-2 focus:ring-primary"
-                    disabled={loading || authLoading}
-                  />
-                  <span className="text-sm text-muted-foreground">Remember me</span>
-                </label>
                 <p className="text-xs text-muted-foreground">
                   Need help? Contact your administrator for password assistance.
                 </p>

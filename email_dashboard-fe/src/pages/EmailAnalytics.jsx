@@ -411,7 +411,7 @@ const EmailAnalytics = () => {
                 data={transformedResponseData}
                 columns={responseColumns}
                 searchKey= {["userName", "email"]}
-                searchPlaceholder="Filter users..."
+                searchPlaceholder="Search by Sales Employee"
                 defaultSort={{ key: "total", direction: "desc" }}
                 pageSize={10}
               />
@@ -447,7 +447,7 @@ const EmailAnalytics = () => {
                 data={transformedAgingData}
                 columns={agingColumns}
                 searchKey={["userName", "email"]}
-                searchPlaceholder="Filter users..."
+                searchPlaceholder="Search by Sales Employee"
                 defaultSort={{ key: "total", direction: "desc" }}
                 pageSize={10}
               />

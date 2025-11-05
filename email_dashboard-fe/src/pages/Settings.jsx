@@ -295,7 +295,7 @@ const Settings = () => {
             {currentUser?.role === "admin" && (
               <Button onClick={handleSyncUsers} disabled={isSyncing}>
                 <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-                {isSyncing ? "Syncing..." : "Sync Users"}
+                {isSyncing ? "Syncing..." : "Sync Users from LDAP"}
               </Button>
             )}
           </div>

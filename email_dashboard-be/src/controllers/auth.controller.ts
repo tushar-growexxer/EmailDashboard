@@ -86,7 +86,7 @@ export class AuthController {
       if (!ldapUser.authenticated) {
         res.status(401).json({
           success: false,
-          message: 'LDAP authentication failed. Please check your credentials.',
+          message: 'Login failed. Please check your credentials.',
         });
         return;
       }
@@ -169,7 +169,7 @@ export class AuthController {
       logger.error('LDAP login error:', error);
       res.status(500).json({
         success: false,
-        message: 'LDAP authentication failed. Please try again.',
+        message: 'Login failed. Please try again.',
       });
     }
   }

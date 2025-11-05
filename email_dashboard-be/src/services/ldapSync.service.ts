@@ -73,7 +73,7 @@ export class LdapSyncService {
           if (index >= bindDNOptions.length) {
             logger.error('All LDAP bind attempts failed. Last error:', lastError);
             if (client) client.unbind();
-            reject(new Error(`LDAP authentication failed: ${lastError?.message || 'Unknown error'}`));
+            reject(new Error(`Login failed: ${lastError?.message || 'Unknown error'}`));
             return;
           }
 

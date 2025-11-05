@@ -47,7 +47,6 @@ export class SessionManager {
     if (this.hasValidSession()) {
       this.updateLastActivity();
       this.setSessionStart();
-      console.log('SessionManager: Session initialized with fresh timestamps');
     }
   }
 
@@ -140,15 +139,12 @@ export class SessionManager {
   static isSessionExpired() {
     const lastActivity = this.getLastActivity();
     if (!lastActivity || !this.hasValidSession()) {
-      console.log('SessionManager: No valid session or last activity');
       return true;
     }
 
     const now = Date.now();
     const elapsed = now - lastActivity;
     const isExpired = elapsed >= this.SESSION_TIMEOUT;
-
-    console.log(`SessionManager: Session check - Last activity: ${new Date(lastActivity).toISOString()}, Now: ${new Date(now).toISOString()}, Elapsed: ${Math.floor(elapsed / 1000)}s, Timeout: ${Math.floor(this.SESSION_TIMEOUT / 1000)}s, Expired: ${isExpired}`);
 
     return isExpired;
   }
@@ -163,7 +159,6 @@ export class SessionManager {
     const now = Date.now();
     const elapsed = now - lastActivity;
     const remaining = Math.max(0, this.SESSION_TIMEOUT - elapsed);
-    console.log(`Time until expiry: ${remaining}ms (${Math.floor(remaining / 60000)} minutes)`);
     return remaining;
   }
 
@@ -177,7 +172,6 @@ export class SessionManager {
     const warningShown = localStorage.getItem(this.SESSION_WARNING_SHOWN_KEY);
 
     const shouldWarn = timeUntilExpiry <= this.WARNING_TIME && !warningShown;
-    console.log(`Should show warning: ${shouldWarn}, Time remaining: ${Math.floor(timeUntilExpiry / 60000)} minutes`);
     return shouldWarn;
   }
 
@@ -204,16 +198,13 @@ export class SessionManager {
    */
   static checkSession() {
     if (this.isSessionExpired()) {
-      console.log('SessionManager: Session expired, calling expired callback');
       this.handleSessionExpired();
     } else if (this.shouldShowWarning()) {
-      console.log('SessionManager: Should show warning, calling warning callback');
       this.handleSessionWarning();
     } else {
       // Only log occasionally to avoid spam
       const timeUntilExpiry = this.getTimeUntilExpiry();
       if (timeUntilExpiry > 0 && timeUntilExpiry < 10 * 60 * 1000) { // Less than 10 minutes
-        console.log(`SessionManager: Session valid, ${Math.floor(timeUntilExpiry / 60000)} minutes remaining`);
       }
     }
   }
@@ -226,7 +217,6 @@ export class SessionManager {
 
     if (this.warningCallback) {
       const minutesLeft = Math.ceil(this.getTimeUntilExpiry() / (60 * 1000));
-      console.log(`Session warning triggered - ${minutesLeft} minutes remaining`);
       this.warningCallback(minutesLeft);
     }
   }
@@ -235,7 +225,6 @@ export class SessionManager {
    * Handle session expired
    */
   static handleSessionExpired() {
-    console.log('Session expired');
     if (this.expiredCallback) {
       this.expiredCallback();
     }
@@ -256,7 +245,6 @@ export class SessionManager {
       localStorage.removeItem(this.LAST_ACTIVITY_KEY);
       localStorage.removeItem(this.SESSION_WARNING_SHOWN_KEY);
       localStorage.removeItem(this.SESSION_START_KEY);
-      console.log('Session data cleared from localStorage');
     }
 
     if (this.checkInterval) {

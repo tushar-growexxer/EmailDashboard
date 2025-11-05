@@ -21,7 +21,7 @@ export interface DatabaseConfig {
 export const getDatabaseConfig = (): DatabaseConfig => {
   // Prefer VPN host if available, fallback to direct host
   const host = process.env.SAP_HANA_VPN_HOST || process.env.SAP_HANA_HOST || '192.168.10.6';
-  
+
   return {
     host: host,
     port: parseInt(process.env.SAP_HANA_PORT ?? '30015'),
@@ -34,7 +34,7 @@ export const getDatabaseConfig = (): DatabaseConfig => {
 
 /**
  * Database connection class
-*/
+ */
 class DatabaseConnection {
   private client: hdb.Client | null = null;
   private config: DatabaseConfig;
@@ -62,7 +62,7 @@ class DatabaseConnection {
         logger.info('Database connect already in progress');
         return;
       }
-      
+
       // Clean up any existing client before creating a new one
       if (this.client) {
         logger.warn('Cleaning up existing disconnected client');
@@ -74,11 +74,13 @@ class DatabaseConnection {
         }
         this.client = null;
       }
-      
+
       this.isConnecting = true;
-      logger.info(`Attempting to connect to SAP HANA database at ${this.config.host}:${this.config.port}`);
+      logger.info(
+        `Attempting to connect to SAP HANA database at ${this.config.host}:${this.config.port}`
+      );
       logger.info(`Using user: ${this.config.user}, schema: ${this.config.schema}`);
-      
+
       this.client = hdb.createClient({
         host: this.config.host,
         port: this.config.port,
@@ -111,12 +113,17 @@ class DatabaseConnection {
         this.client!.connect((err: any) => {
           this.isConnecting = false;
           if (err) {
-            logger.error(`Database connection failed to ${this.config.host}:${this.config.port}:`, err);
+            logger.error(
+              `Database connection failed to ${this.config.host}:${this.config.port}:`,
+              err
+            );
             reject(err);
           } else {
-            logger.info(`✅ Connected to SAP HANA database successfully at ${this.config.host}:${this.config.port}`);
+            logger.info(
+              `✅ Connected to SAP HANA database successfully at ${this.config.host}:${this.config.port}`
+            );
             logger.info(`Connection state after connect: ${this.client!.readyState}`);
-            
+
             // Test the connection immediately with a simple query
             this.client!.exec('SELECT 1 FROM DUMMY', [], (testErr: any) => {
               if (testErr) {
@@ -201,7 +208,9 @@ class DatabaseConnection {
       logger.warn('Client is null, attempting to connect before prepared statement');
       await this.connect();
     } else if (!this.isConnected()) {
-      logger.warn(`Client not connected (state: ${this.client.readyState}), attempting to reconnect before prepared statement`);
+      logger.warn(
+        `Client not connected (state: ${this.client.readyState}), attempting to reconnect before prepared statement`
+      );
       await this.connect();
     }
 
@@ -273,19 +282,20 @@ class DatabaseConnection {
    * The executor receives a callback cb(err, result).
    */
   private async execWithRetry(executor: (cb: (err: any, res?: any) => void) => void): Promise<any> {
-    const attemptExec = () => new Promise<any>((resolve, reject) => {
-      try {
-        executor((err: any, res?: any) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(res);
-          }
-        });
-      } catch (e) {
-        reject(e);
-      }
-    });
+    const attemptExec = () =>
+      new Promise<any>((resolve, reject) => {
+        try {
+          executor((err: any, res?: any) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(res);
+            }
+          });
+        } catch (e) {
+          reject(e);
+        }
+      });
 
     try {
       return await attemptExec();
@@ -294,20 +304,24 @@ class DatabaseConnection {
       const errorCode = err?.code || '';
       const errorMessage = err?.message || '';
       const combinedMessage = `${errorCode} ${errorMessage}`.toLowerCase();
-      
-      if (combinedMessage.includes('ehdbclose') || 
-          combinedMessage.includes('connection closed') ||
-          combinedMessage.includes('state:') ||
-          errorCode === 'EHDBCLOSE') {
-        logger.warn('Detected closed connection during DB operation, attempting reconnect and retry');
+
+      if (
+        combinedMessage.includes('ehdbclose') ||
+        combinedMessage.includes('connection closed') ||
+        combinedMessage.includes('state:') ||
+        errorCode === 'EHDBCLOSE'
+      ) {
+        logger.warn(
+          'Detected closed connection during DB operation, attempting reconnect and retry'
+        );
         logger.warn(`Error details - Code: ${errorCode}, Message: ${errorMessage}`);
-        
+
         try {
           // Force reconnect
           this.stopKeepalive();
           this.client = null;
           await this.connect();
-          
+
           logger.info('Reconnected successfully, retrying operation');
           return await attemptExec();
         } catch (retryErr) {

@@ -47,6 +47,12 @@ class BaseApiService {
           // Clear local user data if authentication fails
           localStorage.removeItem('user');
           localStorage.removeItem('session_start');
+          localStorage.removeItem('last_activity');
+          
+          // Redirect to login page if not already there
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
 
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
