@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Clock, LogIn, Zap, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { ConfirmDialog } from './ui/Dialog';
 
 /**
  * Session warning component that appears when session is about to expire
@@ -11,6 +10,31 @@ const SessionWarning = () => {
   const navigate = useNavigate();
   const { sessionWarning, extendSession, logout } = useAuth();
 
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+  const handleLoginRedirect = React.useCallback(async () => {
+    // Properly logout and clear all data before redirecting
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+    navigate('/login', { replace: true });
+  }, [logout, navigate]);
+
+  // If session is expired, automatically redirect to login
+  // This hook must always be called, not conditionally
+  React.useEffect(() => {
+    if (sessionWarning?.expired) {
+      // Show a brief notification before redirecting
+      const timer = setTimeout(() => {
+        handleLoginRedirect();
+      }, 1000); // 1 second delay to show the message
+
+      return () => clearTimeout(timer);
+    }
+  }, [sessionWarning?.expired, handleLoginRedirect]);
+
+  // NOW we can do conditional returns after all hooks are called
   if (!sessionWarning?.show) {
     return null;
   }
@@ -23,28 +47,6 @@ const SessionWarning = () => {
     // Just clear the warning, don't extend session
     extendSession();
   };
-
-  const handleLoginRedirect = async () => {
-    // Properly logout and clear all data before redirecting
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
-    navigate('/login', { replace: true });
-  };
-
-  // If session is expired, automatically redirect to login
-  React.useEffect(() => {
-    if (sessionWarning.expired) {
-      // Show a brief notification before redirecting
-      const timer = setTimeout(() => {
-        handleLoginRedirect();
-      }, 1000); // 1 second delay to show the message
-
-      return () => clearTimeout(timer);
-    }
-  }, [sessionWarning.expired]);
 
   // If session is expired, show brief notification before redirect
   if (sessionWarning.expired) {

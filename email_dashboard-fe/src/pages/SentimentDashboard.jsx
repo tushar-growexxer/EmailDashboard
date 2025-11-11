@@ -61,15 +61,34 @@ const generateMockSentimentData = () => {
   const days = [];
 
   // Generate 52 weeks of data (in chronological order)
-  for (let i = 1; i <= 52; i++) {
+  // Start from 52 weeks ago
+  const today = new Date();
+  for (let i = 52; i >= 1; i--) {
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - i * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
     weeks.push({
-      date: `Week ${i}`,
+      date: weekStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weekStart: weekStart,
+      weekEnd: weekEnd,
+      weekRange: `${weekStart.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })} - ${weekEnd.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })}`,
       ...customerNames.reduce((acc, customer, index) => {
         acc[customer] = Math.max(
           0.5,
           Math.min(
             3.8,
-            2 + Math.sin(i * 0.1 + index) * 1.2 + Math.random() * 0.8
+            2 + Math.sin((52 - i) * 0.1 + index) * 1.2 + Math.random() * 0.8
           )
         );
         return acc;
@@ -77,21 +96,22 @@ const generateMockSentimentData = () => {
     });
   }
 
-  // Generate 14 days of data (in chronological order)
-  for (let i = 1; i <= 14; i++) {
+  // Generate 14 days of data (in chronological order, including today)
+  // Start from 13 days ago and go to today (total 14 days)
+  for (let i = 13; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     days.push({
       date: date.toLocaleDateString("en-US", {
         month: "short",
-        day: "2-digit",
+        day: "numeric",
       }),
       ...customerNames.reduce((acc, customer, index) => {
         acc[customer] = Math.max(
           0.8,
           Math.min(
             3.5,
-            2 + Math.sin(i * 0.2 + index * 0.5) * 1 + Math.random() * 0.6
+            2 + Math.sin((13 - i) * 0.2 + index * 0.5) * 1 + Math.random() * 0.6
           )
         );
         return acc;
@@ -195,18 +215,91 @@ const formatIndianCurrency = (value, compact = false) => {
   }).format(value);
 };
 
-const getFiscalYearWeeks = () => {
+// Get last calendar week (Monday to Sunday)
+const getLastWeekData = () => {
   const today = new Date();
-  const fiscalYearStart = new Date(today.getFullYear(), 4, 1); // April 1st of the current year
-  const fiscalYearEnd = new Date(today.getFullYear() + 1, 3, 31); // April 1st of the next year
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+  // Calculate last Monday (start of last week)
+  const lastMonday = new Date(today);
+  const daysToLastMonday = dayOfWeek === 0 ? 8 : dayOfWeek + 6; // If Sunday, go back 8 days, else go back to last Monday
+  lastMonday.setDate(today.getDate() - daysToLastMonday);
+  lastMonday.setHours(0, 0, 0, 0);
+
+  // Calculate last Sunday (end of last week)
+  const lastSunday = new Date(lastMonday);
+  lastSunday.setDate(lastMonday.getDate() + 6);
+  lastSunday.setHours(23, 59, 59, 999);
+
   const weeks = [];
-  let currentDate = new Date(fiscalYearStart);
-  while (currentDate < fiscalYearEnd) {
+  let currentDate = new Date(lastMonday);
+
+  while (currentDate <= lastSunday) {
+    const weekStart = new Date(currentDate);
+    const weekEnd = new Date(currentDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const actualWeekEnd = weekEnd > lastSunday ? new Date(lastSunday) : weekEnd;
+
     weeks.push({
-      date: currentDate.toLocaleDateString("en-US", {
+      date: weekStart.toLocaleDateString("en-US", {
         month: "short",
-        day: "2-digit",
+        day: "numeric",
       }),
+      weekStart: weekStart,
+      weekEnd: actualWeekEnd,
+      weekRange: `${weekStart.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })} - ${actualWeekEnd.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })}`,
+      ...mockData.customers.reduce((acc, customer, index) => {
+        acc[customer] = Math.max(
+          0.8,
+          Math.min(3.5, 2 + Math.sin(index * 0.5) * 1 + Math.random() * 0.6)
+        );
+        return acc;
+      }, {}),
+    });
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  return weeks;
+};
+
+// Get last calendar month (1st to last day)
+const getLastMonthData = () => {
+  const today = new Date();
+  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0); // Day 0 = last day of previous month
+
+  const weeks = [];
+  let currentDate = new Date(lastMonthStart);
+
+  while (currentDate <= lastMonthEnd) {
+    const weekStart = new Date(currentDate);
+    const weekEnd = new Date(currentDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const actualWeekEnd =
+      weekEnd > lastMonthEnd ? new Date(lastMonthEnd) : weekEnd;
+
+    weeks.push({
+      date: weekStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weekStart: weekStart,
+      weekEnd: actualWeekEnd,
+      weekRange: `${weekStart.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })} - ${actualWeekEnd.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })}`,
       ...mockData.customers.reduce((acc, customer, index) => {
         acc[customer] = Math.max(
           0.8,
@@ -214,8 +307,7 @@ const getFiscalYearWeeks = () => {
             3.5,
             2 +
               Math.sin(
-                (currentDate - fiscalYearStart) /
-                  (fiscalYearEnd - fiscalYearStart)
+                (currentDate - lastMonthStart) / (lastMonthEnd - lastMonthStart)
               ) *
                 1 +
               Math.random() * 0.6
@@ -226,13 +318,207 @@ const getFiscalYearWeeks = () => {
     });
     currentDate.setDate(currentDate.getDate() + 7);
   }
+
+  return weeks;
+};
+
+// Get past 3 calendar months
+const getPast3MonthsData = () => {
+  const today = new Date();
+  const threeMonthsAgoStart = new Date(
+    today.getFullYear(),
+    today.getMonth() - 3,
+    1
+  );
+  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+
+  const weeks = [];
+  let currentDate = new Date(threeMonthsAgoStart);
+
+  while (currentDate <= lastMonthEnd) {
+    const weekStart = new Date(currentDate);
+    const weekEnd = new Date(currentDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const actualWeekEnd =
+      weekEnd > lastMonthEnd ? new Date(lastMonthEnd) : weekEnd;
+
+    weeks.push({
+      date: weekStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weekStart: weekStart,
+      weekEnd: actualWeekEnd,
+      weekRange: `${weekStart.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })} - ${actualWeekEnd.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })}`,
+      ...mockData.customers.reduce((acc, customer, index) => {
+        acc[customer] = Math.max(
+          0.8,
+          Math.min(
+            3.5,
+            2 +
+              Math.sin(
+                (currentDate - threeMonthsAgoStart) /
+                  (lastMonthEnd - threeMonthsAgoStart)
+              ) *
+                1 +
+              Math.random() * 0.6
+          )
+        );
+        return acc;
+      }, {}),
+    });
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  return weeks;
+};
+
+const getLastFiscalYearWeeks = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+
+  // Last fiscal year: April 1st of previous year to March 31st of current year
+  let lastFiscalYearStart, lastFiscalYearEnd;
+
+  if (today.getMonth() < 3) {
+    // If we're before April, last fiscal year was 2 years ago to last year
+    lastFiscalYearStart = new Date(currentYear - 2, 3, 1);
+    lastFiscalYearEnd = new Date(currentYear - 1, 2, 31);
+  } else {
+    // If we're after April, last fiscal year was last year to this year
+    lastFiscalYearStart = new Date(currentYear - 1, 3, 1);
+    lastFiscalYearEnd = new Date(currentYear, 2, 31);
+  }
+
+  const weeks = [];
+  let currentDate = new Date(lastFiscalYearStart);
+
+  // Generate weeks for the entire last fiscal year
+  while (currentDate <= lastFiscalYearEnd) {
+    const weekStart = new Date(currentDate);
+    const weekEnd = new Date(currentDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    // If week end is beyond fiscal year end, use fiscal year end
+    const actualWeekEnd =
+      weekEnd > lastFiscalYearEnd ? new Date(lastFiscalYearEnd) : weekEnd;
+
+    weeks.push({
+      date: weekStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weekStart: weekStart,
+      weekEnd: actualWeekEnd,
+      weekRange: `${weekStart.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })} - ${actualWeekEnd.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })}`,
+      ...mockData.customers.reduce((acc, customer, index) => {
+        acc[customer] = Math.max(
+          0.8,
+          Math.min(
+            3.5,
+            2 +
+              Math.sin(
+                (currentDate - lastFiscalYearStart) /
+                  (lastFiscalYearEnd - lastFiscalYearStart)
+              ) *
+                1 +
+              Math.random() * 0.6
+          )
+        );
+        return acc;
+      }, {}),
+    });
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  console.log("Generated last fiscal year weeks:", weeks.length);
+  return weeks;
+};
+
+const getFiscalYearWeeks = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+
+  // Fiscal year starts on April 1st
+  // If today is before April 1st, fiscal year started last year
+  const fiscalYearStart =
+    today.getMonth() < 3
+      ? new Date(currentYear - 1, 3, 1) // April 1st of last year
+      : new Date(currentYear, 3, 1); // April 1st of current year
+
+  console.log("Fiscal Year Calculation:", {
+    today: today.toISOString(),
+    currentMonth: today.getMonth(),
+    fiscalYearStart: fiscalYearStart.toISOString(),
+    currentYear,
+  });
+
+  const weeks = [];
+  let currentDate = new Date(fiscalYearStart);
+
+  // Generate weeks from fiscal year start until today
+  while (currentDate <= today) {
+    const weekStart = new Date(currentDate);
+    const weekEnd = new Date(currentDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    // If week end is beyond today, use today as end date
+    const actualWeekEnd = weekEnd > today ? new Date(today) : weekEnd;
+
+    weeks.push({
+      date: weekStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      weekStart: weekStart,
+      weekEnd: actualWeekEnd,
+      weekRange: `${weekStart.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })} - ${actualWeekEnd.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      })}`,
+      ...mockData.customers.reduce((acc, customer, index) => {
+        acc[customer] = Math.max(
+          0.8,
+          Math.min(
+            3.5,
+            2 +
+              Math.sin(
+                (currentDate - fiscalYearStart) / (today - fiscalYearStart)
+              ) *
+                1 +
+              Math.random() * 0.6
+          )
+        );
+        return acc;
+      }, {}),
+    });
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  console.log("Generated fiscal year weeks:", weeks.length);
   return weeks;
 };
 
 const SentimentDashboard = () => {
   const [viewMode, setViewMode] = useState("top10"); // "top10" or "other"
   const [businessType, setBusinessType] = useState("All");
-  const [timePeriod, setTimePeriod] = useState("Last Fiscal Year");
+  const [timePeriod, setTimePeriod] = useState("Current Fiscal Year");
   const [customDateFrom, setCustomDateFrom] = useState("");
   const [customDateTo, setCustomDateTo] = useState("");
   const [showDataTable, setShowDataTable] = useState(false);
@@ -331,31 +617,68 @@ const SentimentDashboard = () => {
 
   // Calculate current data based on time period and data source (demo/live)
   const currentData = useMemo(() => {
+    // console.log("Calculating currentData:", {
+    //   showDemoData,
+    //   timePeriod,
+    //   useLast14Days,
+    // });
+
     // If showing demo data, use mock data
     if (showDemoData) {
       if (useLast14Days) {
-        return mockData.days.slice(0, 14);
+        const data = mockData.days.slice(0, 14);
+        console.log("Returning last 14 days data:", data.length);
+        return data;
       }
 
-      const currentFiscalYearWeeks = getFiscalYearWeeks();
-      const weeksToShow =
-        timePeriod === "Last Week"
-          ? 1
-          : timePeriod === "Last Month"
-          ? 4
-          : timePeriod === "Past 3 Months"
-          ? 12
-          : timePeriod === "Current Fiscal Year"
-          ? currentFiscalYearWeeks
-          : timePeriod === "Last Fiscal Year"
-          ? 52
-          : 52;
-      return mockData.weeks.slice(0, weeksToShow);
+      if (timePeriod === "Current Fiscal Year") {
+        // Return fiscal year weeks directly
+        const fiscalData = getFiscalYearWeeks();
+        console.log("Returning fiscal year data:", fiscalData.length);
+        return fiscalData;
+      }
+
+      if (timePeriod === "Last Fiscal Year") {
+        // Return last fiscal year weeks directly
+        const lastFiscalData = getLastFiscalYearWeeks();
+        console.log("Returning last fiscal year data:", lastFiscalData.length);
+        return lastFiscalData;
+      }
+
+      if (timePeriod === "Last Week") {
+        // Return last calendar week (Monday to Sunday)
+        const lastWeekData = getLastWeekData();
+        console.log("Returning last week data:", lastWeekData.length);
+        return lastWeekData;
+      }
+
+      if (timePeriod === "Last Month") {
+        // Return last calendar month (1st to last day)
+        const lastMonthData = getLastMonthData();
+        console.log("Returning last month data:", lastMonthData.length);
+        return lastMonthData;
+      }
+
+      if (timePeriod === "Past 3 Months") {
+        // Return past 3 calendar months
+        const past3MonthsData = getPast3MonthsData();
+        console.log("Returning past 3 months data:", past3MonthsData.length);
+        return past3MonthsData;
+      }
+
+      // Default fallback
+      const data = mockData.weeks.slice(0, 52);
+      console.log(
+        "Returning default weeks data:",
+        data.length,
+        "weeksToShow:",
+        weeksToShow
+      );
+      return data;
     }
 
     // If showing live data, transform MongoDB data to chart format
     if (liveData) {
-
       if (useLast14Days && liveData.daily && liveData.daily.domains) {
         // Use daily data for last 14 days
         const selectedDomain = liveData.daily.domains.find(
@@ -363,25 +686,208 @@ const SentimentDashboard = () => {
         );
 
         if (selectedDomain && selectedDomain.daily_scores) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+          // Filter for last 14 days including today (days 0-13)
           const chartData = selectedDomain.daily_scores
-            .map((score) => ({
-              date: score.date,
-              [selectedDetailCustomer]: score.average_sentiment_score || 2,
-            }))
-            .slice(0, 14);
+            .filter((score) => {
+              // Parse DD-MM-YYYY format
+              const [day, month, year] = score.date.split("-");
+              const scoreDate = new Date(year, month - 1, day);
+              scoreDate.setHours(0, 0, 0, 0);
+
+              const daysDiff = Math.floor(
+                (today - scoreDate) / (1000 * 60 * 60 * 24)
+              );
+              // Include today (0) through 13 days ago (total 14 days)
+              return daysDiff >= 0 && daysDiff <= 13;
+            })
+            .sort((a, b) => {
+              // Sort in chronological order (oldest to newest)
+              const [dayA, monthA, yearA] = a.date.split("-");
+              const [dayB, monthB, yearB] = b.date.split("-");
+              const dateA = new Date(yearA, monthA - 1, dayA);
+              const dateB = new Date(yearB, monthB - 1, dayB);
+              return dateA - dateB;
+            })
+            .map((score) => {
+              // Parse and format date for display
+              const [day, month, year] = score.date.split("-");
+              const scoreDate = new Date(year, month - 1, day);
+              return {
+                date: scoreDate.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                }),
+                [selectedDetailCustomer]: score.average_sentiment_score || 2,
+              };
+            });
           return chartData;
         }
       } else if (liveData.weekly && liveData.weekly.domains) {
-        // Use weekly data
+        // Use weekly data with fiscal year filtering
         const selectedDomain = liveData.weekly.domains.find(
           (d) => d.domain === selectedDetailCustomer
         );
 
         if (selectedDomain && selectedDomain.weekly_scores) {
-          const chartData = selectedDomain.weekly_scores.map((score) => ({
-            date: `Week ${score.week_number}`,
-            [selectedDetailCustomer]: score.average_sentiment_score || 2,
-          }));
+          const today = new Date();
+          const currentYear = today.getFullYear();
+
+          // Determine fiscal year start
+          const fiscalYearStart =
+            today.getMonth() < 3
+              ? new Date(currentYear - 1, 3, 1) // April 1st of last year
+              : new Date(currentYear, 3, 1); // April 1st of current year
+
+          // Filter and map weekly data based on time period
+          let filteredScores = selectedDomain.weekly_scores;
+
+          if (timePeriod === "Last Week") {
+            // Filter for last calendar week (Monday to Sunday)
+            const dayOfWeek = today.getDay();
+            const lastMonday = new Date(today);
+            const daysToLastMonday = dayOfWeek === 0 ? 8 : dayOfWeek + 6;
+            lastMonday.setDate(today.getDate() - daysToLastMonday);
+            lastMonday.setHours(0, 0, 0, 0);
+
+            const lastSunday = new Date(lastMonday);
+            lastSunday.setDate(lastMonday.getDate() + 6);
+            lastSunday.setHours(23, 59, 59, 999);
+
+            filteredScores = selectedDomain.weekly_scores.filter((score) => {
+              if (score.start_date) {
+                const [day, month, year] = score.start_date.split("-");
+                const weekStartDate = new Date(year, month - 1, day);
+                return (
+                  weekStartDate >= lastMonday && weekStartDate <= lastSunday
+                );
+              }
+              return false;
+            });
+          } else if (timePeriod === "Last Month") {
+            // Filter for last calendar month (1st to last day)
+            const lastMonthStart = new Date(
+              today.getFullYear(),
+              today.getMonth() - 1,
+              1
+            );
+            const lastMonthEnd = new Date(
+              today.getFullYear(),
+              today.getMonth(),
+              0
+            );
+
+            filteredScores = selectedDomain.weekly_scores.filter((score) => {
+              if (score.start_date) {
+                const [day, month, year] = score.start_date.split("-");
+                const weekStartDate = new Date(year, month - 1, day);
+                return (
+                  weekStartDate >= lastMonthStart &&
+                  weekStartDate <= lastMonthEnd
+                );
+              }
+              return false;
+            });
+          } else if (timePeriod === "Past 3 Months") {
+            // Filter for past 3 calendar months
+            const threeMonthsAgoStart = new Date(
+              today.getFullYear(),
+              today.getMonth() - 3,
+              1
+            );
+            const lastMonthEnd = new Date(
+              today.getFullYear(),
+              today.getMonth(),
+              0
+            );
+
+            filteredScores = selectedDomain.weekly_scores.filter((score) => {
+              if (score.start_date) {
+                const [day, month, year] = score.start_date.split("-");
+                const weekStartDate = new Date(year, month - 1, day);
+                return (
+                  weekStartDate >= threeMonthsAgoStart &&
+                  weekStartDate <= lastMonthEnd
+                );
+              }
+              return false;
+            });
+          } else if (timePeriod === "Current Fiscal Year") {
+            // Filter weeks from April 1st to today
+            filteredScores = selectedDomain.weekly_scores.filter((score) => {
+              if (score.start_date) {
+                // Parse date in DD-MM-YYYY format
+                const [day, month, year] = score.start_date.split("-");
+                const weekStartDate = new Date(year, month - 1, day);
+                return (
+                  weekStartDate >= fiscalYearStart && weekStartDate <= today
+                );
+              }
+              return true; // Include if no date info
+            });
+          } else if (timePeriod === "Last Fiscal Year") {
+            // Filter for last fiscal year
+            const lastFiscalYearStart =
+              today.getMonth() < 3
+                ? new Date(currentYear - 2, 3, 1)
+                : new Date(currentYear - 1, 3, 1);
+            const lastFiscalYearEnd =
+              today.getMonth() < 3
+                ? new Date(currentYear - 1, 2, 31)
+                : new Date(currentYear, 2, 31);
+
+            filteredScores = selectedDomain.weekly_scores.filter((score) => {
+              if (score.start_date) {
+                const [day, month, year] = score.start_date.split("-");
+                const weekStartDate = new Date(year, month - 1, day);
+                return (
+                  weekStartDate >= lastFiscalYearStart &&
+                  weekStartDate <= lastFiscalYearEnd
+                );
+              }
+              return false;
+            });
+          }
+
+          const chartData = filteredScores.map((score) => {
+            // Parse start_date and end_date - always show week start date
+            let weekRange = null;
+            let displayDate = null;
+
+            if (score.start_date && score.end_date) {
+              // Parse DD-MM-YYYY format
+              const parseDate = (dateStr) => {
+                const [day, month, year] = dateStr.split("-");
+                return new Date(year, month - 1, day);
+              };
+
+              const startDate = parseDate(score.start_date);
+              const endDate = parseDate(score.end_date);
+
+              // Always show week start date on x-axis
+              displayDate = startDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              });
+
+              // Week range for tooltip
+              weekRange = `${startDate.toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+              })} - ${endDate.toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+              })}`;
+            }
+
+            return {
+              date: displayDate || `Week ${score.week_number}`,
+              weekRange: weekRange,
+              [selectedDetailCustomer]: score.average_sentiment_score || 2,
+            };
+          });
           return chartData;
         }
       }
@@ -401,7 +907,11 @@ const SentimentDashboard = () => {
   const top10Customers = useMemo(() => {
     return mockData.customersWithValues.slice(0, 10).map((customer, index) => {
       const values = currentData.map((d) => d[customer.name] || 2);
-      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+      // Handle incomplete weeks by calculating average only from available data
+      const avg =
+        values.length > 0
+          ? values.reduce((a, b) => a + b, 0) / values.length
+          : 2;
       return {
         customer: customer.name,
         average: avg,
@@ -423,10 +933,69 @@ const SentimentDashboard = () => {
         // Transform MongoDB data to display format
         const liveCustomers = liveData.userDomain.domains
           .map((domain, index) => {
-            const avgScore =
-              domain.users.reduce((sum, user) => {
-                return sum + (user.average_sentiment_score || 2);
-              }, 0) / domain.users.length;
+            // Calculate average based on time period for fiscal year
+            let avgScore;
+
+            if (
+              timePeriod === "Current Fiscal Year" &&
+              liveData.weekly &&
+              liveData.weekly.domains
+            ) {
+              // For fiscal year, calculate from filtered weekly data
+              const weeklyDomain = liveData.weekly.domains.find(
+                (d) => d.domain === domain.domain
+              );
+              if (weeklyDomain && weeklyDomain.weekly_scores) {
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const fiscalYearStart =
+                  today.getMonth() < 3
+                    ? new Date(currentYear - 1, 3, 1)
+                    : new Date(currentYear, 3, 1);
+
+                const fiscalYearScores = weeklyDomain.weekly_scores.filter(
+                  (score) => {
+                    if (score.start_date) {
+                      const [day, month, year] = score.start_date.split("-");
+                      const weekStartDate = new Date(year, month - 1, day);
+                      return (
+                        weekStartDate >= fiscalYearStart &&
+                        weekStartDate <= today
+                      );
+                    }
+                    return false;
+                  }
+                );
+
+                if (fiscalYearScores.length > 0) {
+                  avgScore =
+                    fiscalYearScores.reduce(
+                      (sum, score) =>
+                        sum + (score.average_sentiment_score || 2),
+                      0
+                    ) / fiscalYearScores.length;
+                } else {
+                  avgScore =
+                    domain.users.reduce(
+                      (sum, user) => sum + (user.average_sentiment_score || 2),
+                      0
+                    ) / domain.users.length;
+                }
+              } else {
+                avgScore =
+                  domain.users.reduce(
+                    (sum, user) => sum + (user.average_sentiment_score || 2),
+                    0
+                  ) / domain.users.length;
+              }
+            } else {
+              // For other time periods, use overall user average
+              avgScore =
+                domain.users.reduce(
+                  (sum, user) => sum + (user.average_sentiment_score || 2),
+                  0
+                ) / domain.users.length;
+            }
 
             return {
               customer: domain.domain,
@@ -444,7 +1013,7 @@ const SentimentDashboard = () => {
       // If live data not loaded yet, show empty or loading state
       return [];
     }
-  }, [showDemoData, top10Customers, liveData]);
+  }, [showDemoData, top10Customers, liveData, timePeriod]);
 
   // Set initial customer on component mount
   useEffect(() => {
@@ -569,13 +1138,6 @@ const SentimentDashboard = () => {
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="text-xs">
-                {viewMode === "top10"
-                  ? showDemoData
-                    ? "Demo data - Ranked by sentiment score"
-                    : "Live data from MongoDB"
-                  : "Search and select a customer"}
-              </CardDescription>
 
               {/* Filters based on view mode */}
               <div className="mt-4 space-y-4">
@@ -887,7 +1449,10 @@ const SentimentDashboard = () => {
             <CardContent className="p-4">
               {/* Check if selected customer has sentiment data */}
               {selectedSearchCustomer ? (
-                <div className="flex items-center justify-center py-12">
+                <div
+                  className="flex items-center justify-center"
+                  style={{ height: "calc(100vh - 400px)", minHeight: "400px" }}
+                >
                   <div className="text-center">
                     <Meh className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                     <h3 className="text-lg font-semibold mb-2">
@@ -910,7 +1475,10 @@ const SentimentDashboard = () => {
                   </div>
                 </div>
               ) : currentData.length === 0 && !showDemoData ? (
-                <div className="flex items-center justify-center py-12">
+                <div
+                  className="flex items-center justify-center"
+                  style={{ height: "calc(100vh - 400px)", minHeight: "400px" }}
+                >
                   <div className="text-center">
                     <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                     <h3 className="text-lg font-semibold mb-2">
@@ -961,7 +1529,9 @@ const SentimentDashboard = () => {
                             key={index}
                             className="border-b hover:bg-muted/50"
                           >
-                            <td className="p-3 font-medium">{row.date}</td>
+                            <td className="p-3 font-medium">
+                              {row.weekRange || row.date}
+                            </td>
                             <td className="p-3 text-center font-mono">
                               {score.toFixed(2)}
                             </td>
@@ -1056,7 +1626,17 @@ const SentimentDashboard = () => {
                           parseFloat(value).toFixed(2),
                           "Sentiment Score",
                         ]}
-                        labelFormatter={(label) => `Date: ${label}`}
+                        labelFormatter={(label, payload) => {
+                          // Show week range if available, otherwise show date
+                          if (
+                            payload &&
+                            payload.length > 0 &&
+                            payload[0].payload.weekRange
+                          ) {
+                            return `Week: ${payload[0].payload.weekRange}`;
+                          }
+                          return `Date: ${label}`;
+                        }}
                       />
                       {/* Background rectangle for negative sentiment area (above neutral line) */}
                       <ReferenceArea
@@ -1144,11 +1724,11 @@ const SentimentDashboard = () => {
 
               {/* Sentiment Scale - Moved to bottom of chart with horizontal orientation */}
               <div className="border-t mt-4">
-                <div className="flex items-center gap-6 py-3">
-                  <span className="text-xs font-medium text-muted-foreground">
+                <div className="flex items-end gap-6 py-3">
+                  <span className="text-xs font-medium text-muted-foreground mb-1">
                     Sentiment Scale:
                   </span>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-end gap-3">
                     {sentimentScale.map((item) => (
                       <div
                         key={item.value}
