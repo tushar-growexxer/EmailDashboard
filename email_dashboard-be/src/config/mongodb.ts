@@ -46,15 +46,17 @@ class MongoDBConnection {
    */
   async connect(): Promise<Db> {
     try {
+      logger.info(`[MONGODB] ========== MongoDB Connection ==========`);
+      
       // If already connected, return existing database
       if (this.client && this.db) {
-        logger.debug('Using existing MongoDB connection');
+        logger.debug('[MONGODB] ✓ Using existing MongoDB connection');
         return this.db;
       }
 
       // If connection is in progress, wait for it
       if (this.isConnecting) {
-        logger.debug('MongoDB connection already in progress, waiting...');
+        logger.debug('[MONGODB] Connection already in progress, waiting...');
         while (this.isConnecting) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -63,7 +65,9 @@ class MongoDBConnection {
 
       this.isConnecting = true;
 
-      logger.info('Connecting to MongoDB...');
+      logger.info('[MONGODB] Attempting to connect to MongoDB...');
+      logger.info(`[MONGODB] URI: ${this.config.uri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`); // Hide credentials
+      logger.info(`[MONGODB] Database: ${this.config.database}`);
 
       // Check if using MongoDB Atlas (srv protocol)
       const isAtlas = this.config.uri.includes('mongodb+srv://');
@@ -76,25 +80,37 @@ class MongoDBConnection {
         socketTimeoutMS: 45000,
         // TLS configuration for MongoDB Atlas
         tls: isAtlas,
-        tlsAllowInvalidCertificates: false,
-        tlsAllowInvalidHostnames: false,
+        tlsAllowInvalidCertificates: true, // Allow self-signed certificates for development
+        tlsAllowInvalidHostnames: true, // Allow hostname mismatches for development
       };
 
       this.client = new MongoClient(this.config.uri, options);
+      logger.info('[MONGODB] MongoClient created, connecting...');
+      
       await this.client.connect();
+      logger.info('[MONGODB] ✓ Client connected successfully');
 
       this.db = this.client.db(this.config.database);
+      logger.info(`[MONGODB] Database instance obtained: ${this.config.database}`);
 
       // Test connection
+      logger.info('[MONGODB] Testing connection with ping...');
       await this.db.admin().ping();
+      logger.info('[MONGODB] ✓ Ping successful');
 
-      logger.info(`Connected to MongoDB database: ${this.config.database}`);
+      logger.info(`[MONGODB] ✅ Connected to MongoDB database: ${this.config.database}`);
+      logger.info('[MONGODB] ========== Connection Complete ==========');
       this.isConnecting = false;
 
       return this.db;
     } catch (error) {
       this.isConnecting = false;
-      logger.error('Failed to connect to MongoDB:', error);
+      logger.error('[MONGODB] ========== Connection Failed ==========');
+      logger.error('[MONGODB] Error details:', error);
+      if (error instanceof Error) {
+        logger.error(`[MONGODB] Error message: ${error.message}`);
+        logger.error(`[MONGODB] Error name: ${error.name}`);
+      }
       throw error;
     }
   }
@@ -168,6 +184,24 @@ class MongoDBConnection {
    */
   getConfig(): MongoDBConfig {
     return this.config;
+  }
+
+  /**
+   * Get a specific database by name
+   * @param {string} dbName - Name of the database
+   * @returns {Promise<Db>} Database instance
+   */
+  async getDatabaseByName(dbName: string): Promise<Db> {
+    // Ensure client is connected
+    if (!this.client) {
+      await this.connect();
+    }
+    
+    if (!this.client) {
+      throw new Error('MongoDB client not initialized');
+    }
+    
+    return this.client.db(dbName);
   }
 }
 

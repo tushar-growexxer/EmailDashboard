@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 const SidebarContext = createContext({
-  isSidebarOpen: false,
+  isSidebarOpen: true,
   toggleSidebar: () => {},
   setSidebarOpen: () => {},
 });
@@ -16,9 +16,9 @@ export const useSidebar = () => {
 
 export const SidebarProvider = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    // Check localStorage for saved state
+    // Check localStorage for saved state, default to true (open)
     const saved = localStorage.getItem("sidebarOpen");
-    return saved ? JSON.parse(saved) : false;
+    return saved !== null ? JSON.parse(saved) : true;
   });
 
   useEffect(() => {

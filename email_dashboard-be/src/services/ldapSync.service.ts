@@ -5,6 +5,17 @@ import logger from '../config/logger';
 import NodeCache = require('node-cache');
 
 /**
+ * Manager reference interface
+ * Represents a manager assigned to a user
+ */
+export interface ManagerReference {
+  userId: string; // Google ID or sAMAccountName
+  email: string;
+  displayName: string;
+  userType: 'google' | 'ldap'; // Type of user (google or ldap)
+}
+
+/**
  * LDAP User interface for syncing to MongoDB
  */
 export interface LdapUserData {
@@ -15,8 +26,10 @@ export interface LdapUserData {
   cn?: string;
   distinguishedName?: string;
   lastLogin?: Date;
-  role: 'user' | 'manager' | 'admin';
+  role: 'user' | 'manager' | 'admin' | 'super admin';
   isActive: boolean;
+  domain?: string; // Email domain (e.g., 'matangi.com')
+  manager?: ManagerReference | ManagerReference[]; // Manager(s) assigned to this user (can be multiple)
   syncedAt: Date;
 }
 
@@ -128,6 +141,10 @@ export class LdapSyncService {
                   attributes.userPrincipalName &&
                   !attributes.userPrincipalName.endsWith('$')
                 ) {
+                  // Extract domain from email
+                  const email = attributes.mail || attributes.userPrincipalName;
+                  const domain = email ? email.split('@')[1] : undefined;
+
                   const ldapUser: LdapUserData = {
                     sAMAccountName: attributes.sAMAccountName,
                     displayName: attributes.displayName || attributes.cn || attributes.sAMAccountName,
@@ -137,6 +154,7 @@ export class LdapSyncService {
                     distinguishedName: entry.dn.toString(),
                     role: 'user', // Default role
                     isActive: false, // Default inactive
+                    domain, // Store domain
                     syncedAt: new Date(),
                   };
 
@@ -232,6 +250,7 @@ export class LdapSyncService {
                 mail: ldapUser.mail,
                 cn: ldapUser.cn,
                 distinguishedName: ldapUser.distinguishedName,
+                domain: ldapUser.domain,
                 syncedAt: ldapUser.syncedAt,
               },
               $setOnInsert: {
@@ -365,7 +384,12 @@ export class LdapSyncService {
    */
   async updateUserStatus(
     sAMAccountName: string,
-    updates: { role?: 'user' | 'manager' | 'admin'; isActive?: boolean }
+    updates: {
+      role?: 'user' | 'manager' | 'admin' | 'super admin';
+      isActive?: boolean;
+      domain?: string;
+      manager?: ManagerReference | ManagerReference[];
+    }
   ): Promise<boolean> {
     try {
       const db = await mongodb.getDatabase();
@@ -389,6 +413,67 @@ export class LdapSyncService {
       return result.modifiedCount > 0;
     } catch (error) {
       logger.error('Error updating user status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an LDAP user from MongoDB
+   * Also deletes the user from UserManager if they exist there
+   * @param {string} sAMAccountName - User's sAMAccountName
+   * @returns {Promise<boolean>} True if deleted successfully
+   */
+  async deleteUser(sAMAccountName: string): Promise<boolean> {
+    try {
+      const db = await mongodb.getDatabase();
+      const usersDatabase = process.env.USERS_DATABASE || 'users';
+      const usersCollection = process.env.LDAP_USERS_COLLECTION || 'ldap-users';
+      
+      const usersDb = db.client.db(usersDatabase);
+      const collection = usersDb.collection(usersCollection);
+
+      // Get user email before deleting
+      const user = await collection.findOne({ sAMAccountName });
+      if (!user) {
+        return false;
+      }
+
+      // Delete from LDAP users collection
+      const result = await collection.deleteOne({ sAMAccountName });
+      const deleted = result.deletedCount > 0;
+
+      if (deleted) {
+        logger.info(`LDAP user deleted: ${sAMAccountName}`);
+        
+        // Clear cache after deletion
+        this.clearCache();
+        
+        // Also delete from UserManager if user exists there
+        const userEmail = (user as any).mail || (user as any).userPrincipalName;
+        if (userEmail) {
+          // Terminate user session via external API (non-blocking for LDAP)
+          try {
+            const { sessionTerminationService } = await import('./sessionTermination.service');
+            await sessionTerminationService.terminateSession(userEmail);
+          } catch (sessionError) {
+            // Log error but don't fail the deletion if session termination fails
+            logger.warn(`Failed to terminate session for ${userEmail}: ${sessionError}`);
+          }
+          
+          try {
+            const { userManagerService } = await import('./userManager.service');
+            await userManagerService.deleteUser(userEmail);
+            logger.info(`User also deleted from UserManager: ${userEmail}`);
+          } catch (userManagerError) {
+            // Log error but don't fail the deletion if UserManager deletion fails
+            logger.warn(`Failed to delete user from UserManager: ${userManagerError}`);
+          }
+        }
+      }
+
+      return deleted;
+    } catch (error) {
+      logger.error('Error deleting LDAP user:', error);
       throw error;
     }
   }

@@ -30,9 +30,13 @@ export default defineConfig({
       },
     },
     // Increase chunk size warning limit since we're splitting properly
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
     // Use esbuild for faster minification
     minify: 'esbuild',
     target: 'esnext',
+    // Enable source maps for debugging (disable in production for better performance)
+    sourcemap: false,
+    // Optimize asset handling
+    assetsInlineLimit: 4096, // Inline small assets as base64
   },
 })

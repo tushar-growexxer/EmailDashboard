@@ -5,22 +5,22 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
   const { user } = useAuth();
   return (
-    <footer className="bg-card border-t border-border mt-12 transition-colors duration-300">
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+    <footer className="bg-card border-t border-border mt-6 sm:mt-8 md:mt-12 transition-colors duration-300">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Company Info */}
           <div>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <img
               src="/src/assets/matangi-logo.png"
               alt="Matangi Logo"
-              className="h-10 w-auto"
+              className="h-8 sm:h-10 w-auto"
             />
-            <h3 className="font-bold text-lg text-foreground">Email Dashboard</h3>
+            <h3 className="font-bold text-base sm:text-lg text-foreground">Email Pilot</h3>
           </div>
 
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
               Comprehensive email management and analytics platform for modern businesses.
             </p>
             {/* <div className="flex gap-3">
@@ -56,20 +56,20 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <h4 className="font-semibold text-sm sm:text-base text-foreground mb-3 sm:mb-4">Quick Links</h4>
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
-                <a href="/email-analytics" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <a href="/email-analytics" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
                   Email Analytics
                 </a>
               </li>
               <li>
-                <a href="/sentiment" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <a href="/sentiment" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
                   Sentiment Analysis
                 </a>
               </li>
-              {user?.role === "admin" && (<li>
-                <a href="/settings" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              {["admin","super admin"].includes(user?.role) && (<li>
+                <a href="/settings" className="text-xs sm:text-sm text-muted-foreground hover:text-primary transition-colors">
                   Settings
                 </a>
               </li>)}
@@ -105,17 +105,17 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-semibold text-slate-900 dark:text-slate-50 mb-4">Contact Us</h4>
-            <ul className="space-y-3">
+            <h4 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-50 mb-3 sm:mb-4">Contact Us</h4>
+            <ul className="space-y-2 sm:space-y-3">
               <li className="flex items-start gap-2">
-                <Mail className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                <a href="mailto:sap2@matangiindustries.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                <a href="mailto:sap2@matangiindustries.com" className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors break-all">
                   sap2@matangiindustries.com
                 </a>
               </li>
               <li className="flex items-start gap-2">
-                <Mail className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                <a href="mailto:sap2@matangiindustries.com" className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                <a href="mailto:sap2@matangiindustries.com" className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors break-all">
                   sap@matangiindustries.com
                 </a>
               </li>
@@ -143,8 +143,8 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+        <div className="pt-4 sm:pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center md:text-left">
             © {currentYear} Matangi Industries LLP. All rights reserved.
           </p>
           {/* <div className="flex gap-6">

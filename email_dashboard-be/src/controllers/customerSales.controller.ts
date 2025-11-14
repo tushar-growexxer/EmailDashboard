@@ -11,11 +11,17 @@ class CustomerSalesController {
    * Get all customer sales data
    * GET /api/customers/sales
    */
-  async getAllCustomers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAllCustomers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      logger.info('GET /api/customers/sales - Fetching all customer sales data');
+      const userEmail = req.user?.email;
+      logger.info(`[CUSTOMER-SALES] ========== Get All Customers Request ==========`);
+      logger.info(`[CUSTOMER-SALES] User: ${userEmail || 'unknown'}`);
+      logger.info(`[CUSTOMER-SALES] User ID: ${req.user?.userId}`);
+      logger.info(`[CUSTOMER-SALES] User Role: ${req.user?.role}`);
       
-      const data = await customerSalesService.getCustomerSalesData();
+      logger.info(`[CUSTOMER-SALES] Calling service layer...`);
+      const data = await customerSalesService.getCustomerSalesData(userEmail);
+      logger.info(`[CUSTOMER-SALES] Service returned ${data.length} customers`);
 
       res.status(200).json({
         success: true,
@@ -23,8 +29,14 @@ class CustomerSalesController {
         data: data,
         count: data.length,
       });
+      logger.info(`[CUSTOMER-SALES] Response sent successfully`);
     } catch (error) {
-      logger.error('Error in getAllCustomers controller:', error);
+      logger.error('[CUSTOMER-SALES] ========== Error in getAllCustomers ==========');
+      logger.error('[CUSTOMER-SALES] Error details:', error);
+      if (error instanceof Error) {
+        logger.error(`[CUSTOMER-SALES] Error message: ${error.message}`);
+        logger.error(`[CUSTOMER-SALES] Error stack: ${error.stack}`);
+      }
       next(error);
     }
   }
@@ -37,10 +49,16 @@ class CustomerSalesController {
     try {
       const searchTerm = req.query.q as string || '';
       const limit = parseInt(req.query.limit as string) || 10;
+      const userEmail = req.user?.email;
 
-      logger.info(`GET /api/customers/search - Searching for "${searchTerm}"`);
+      logger.info(`[CUSTOMER-SEARCH] ========== Search Customers Request ==========`);
+      logger.info(`[CUSTOMER-SEARCH] User: ${userEmail || 'unknown'}`);
+      logger.info(`[CUSTOMER-SEARCH] Search term: "${searchTerm}"`);
+      logger.info(`[CUSTOMER-SEARCH] Limit: ${limit}`);
 
-      const results = await customerSalesService.searchCustomers(searchTerm, limit);
+      logger.info(`[CUSTOMER-SEARCH] Calling service layer...`);
+      const results = await customerSalesService.searchCustomers(searchTerm, limit, userEmail);
+      logger.info(`[CUSTOMER-SEARCH] Service returned ${results.length} results`);
 
       res.status(200).json({
         success: true,
@@ -49,8 +67,14 @@ class CustomerSalesController {
         count: results.length,
         searchTerm: searchTerm,
       });
+      logger.info(`[CUSTOMER-SEARCH] Response sent successfully`);
     } catch (error) {
-      logger.error('Error in searchCustomers controller:', error);
+      logger.error('[CUSTOMER-SEARCH] ========== Error in searchCustomers ==========');
+      logger.error('[CUSTOMER-SEARCH] Error details:', error);
+      if (error instanceof Error) {
+        logger.error(`[CUSTOMER-SEARCH] Error message: ${error.message}`);
+        logger.error(`[CUSTOMER-SEARCH] Error stack: ${error.stack}`);
+      }
       next(error);
     }
   }
@@ -62,10 +86,11 @@ class CustomerSalesController {
   async getCustomerByCardCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const cardCode = req.params.cardCode;
+      const userEmail = req.user?.email;
 
-      logger.info(`GET /api/customers/${cardCode} - Fetching customer data`);
+      logger.info(`GET /api/customers/${cardCode} - Fetching customer data${userEmail ? ` for user: ${userEmail}` : ''}`);
 
-      const customer = await customerSalesService.getCustomerByCardCode(cardCode);
+      const customer = await customerSalesService.getCustomerByCardCode(cardCode, userEmail);
 
       if (!customer) {
         res.status(404).json({

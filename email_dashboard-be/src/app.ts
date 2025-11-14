@@ -7,8 +7,13 @@ import cookieParser from 'cookie-parser';
 import routes from './routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { requestLogger } from './middlewares/requestLogger.middleware';
+import passport from './config/passport';
+import { configurePassport } from './config/passport';
 
 const app: Application = express();
+
+// Configure Passport for Google OAuth
+configurePassport();
 
 // CORS Configuration - Allow multiple origins
 const allowedOrigins = process.env.CORS_ORIGIN
@@ -43,6 +48,9 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser()); // Parse cookies for authentication
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Compression
 app.use(compression());

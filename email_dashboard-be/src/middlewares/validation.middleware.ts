@@ -29,7 +29,7 @@ export class ValidationMiddleware {
    * @returns {boolean} True if role is valid, false otherwise
    */
   static isValidRole(role: string): boolean {
-    return ['admin', 'user'].includes(role);
+    return ['admin', 'user','super admin'].includes(role);
   }
 
   /**

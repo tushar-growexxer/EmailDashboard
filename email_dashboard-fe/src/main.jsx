@@ -5,13 +5,16 @@ import App from './App.jsx'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { SidebarProvider } from './contexts/SidebarContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { SnackbarProvider } from './contexts/SnackbarContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <ThemeProvider>
         <SidebarProvider>
-          <App />
+          <SnackbarProvider>
+            <App />
+          </SnackbarProvider>
         </SidebarProvider>
       </ThemeProvider>
     </AuthProvider>

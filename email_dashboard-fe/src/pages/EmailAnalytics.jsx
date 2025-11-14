@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Mail, Clock, AlertTriangle, RefreshCw, AlertCircle } from "lucide-react";
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Mail, Clock, AlertTriangle, RefreshCw, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -8,7 +8,9 @@ import { Avatar, AvatarFallback } from "../components/ui/Avatar";
 import { Select } from "../components/ui/Select";
 import { PaginatedTable } from "../components/ui/PaginatedTable";
 import { useAuth } from "../contexts/AuthContext";
+import { useSnackbar } from "../contexts/SnackbarContext";
 import useDashboardData from "../hooks/useDashboardData";
+import { authApi } from "../api";
 import {
   transformResponseDashboardData,
   transformAgingDashboardData,
@@ -40,6 +42,7 @@ import { cn } from "../lib/utils";
  */
 const EmailAnalytics = () => {
   const { user } = useAuth();
+  const { showError, showInfo } = useSnackbar();
   
   // Dashboard data hooks
   const {
@@ -64,6 +67,10 @@ const EmailAnalytics = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedUserData, setSelectedUserData] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastShownError, setLastShownError] = useState(null);
+  const [isSynced, setIsSynced] = useState(false);
+  const [checkingSyncStatus, setCheckingSyncStatus] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Transform MongoDB data for tables
   const transformedResponseData = useMemo(() => {
@@ -331,64 +338,129 @@ const EmailAnalytics = () => {
   // Loading state
   const isLoading = loadingResponse || loadingAging;
 
-  // Error state
-  const hasError = errorResponse || errorAging;
+  // Check email sync status on mount
+  useEffect(() => {
+    const checkSyncStatus = async () => {
+      if (!user || !user.isGoogleUser) {
+        setCheckingSyncStatus(false);
+        return;
+      }
+
+      try {
+        const result = await authApi.checkEmailSyncStatus();
+        if (result.success) {
+          setIsSynced(result.isSynced || false);
+        }
+      } catch (error) {
+        console.error('Error checking sync status:', error);
+        // Don't show error to user, just assume not synced
+        setIsSynced(false);
+      } finally {
+        setCheckingSyncStatus(false);
+      }
+    };
+
+    checkSyncStatus();
+  }, [user]);
+
+  // Show error in snackbar when error occurs (only once per error)
+  useEffect(() => {
+    const currentError = errorResponse || errorAging;
+    if (currentError && currentError !== lastShownError) {
+      setLastShownError(currentError);
+      // Convert technical error messages to user-friendly ones
+      let userFriendlyMessage = "Unable to load dashboard data. Please try refreshing.";
+      
+      if (currentError.includes("User not found") || currentError.includes("user not found")) {
+        userFriendlyMessage = "Your account could not be found. Please contact support.";
+      } else if (currentError.includes("401") || currentError.includes("Unauthorized")) {
+        userFriendlyMessage = "Your session has expired. Please log in again.";
+      } else if (currentError.includes("403") || currentError.includes("Forbidden")) {
+        userFriendlyMessage = "You don't have permission to access this data.";
+      } else if (currentError.includes("Network") || currentError.includes("fetch")) {
+        userFriendlyMessage = "Unable to connect to the server. Please check your connection.";
+      }
+      
+      showError(userFriendlyMessage);
+    } else if (!currentError && lastShownError) {
+      // Reset when error is cleared
+      setLastShownError(null);
+    }
+  }, [errorResponse, errorAging, showError, lastShownError]);
+
+  // Handle email sync
+  const handleSyncEmail = async () => {
+    setIsSyncing(true);
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const syncUrl = `${apiBaseUrl}/api/v1/auth/google/sync`;
+      // Redirect to Gmail sync OAuth endpoint
+      window.location.href = syncUrl;
+    } catch (error) {
+      console.error('Error initiating email sync:', error);
+      showError('Failed to initiate email sync. Please try again.');
+      setIsSyncing(false);
+    }
+  };
 
   return (
-    <div className="space-y-6 w-full mx-auto px-4">
+    <div className="space-y-4 sm:space-y-6 w-full mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold mb-2">Email Analytics Dashboard</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-1 sm:mb-2">Email Analytics Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Comprehensive view of unreplied emails and aging analysis
           </p>
           {lastFetched && (
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
               Last refreshed: {formatDateTimeWithAMPM(new Date().setHours(7,0,0,0))}
             </p>
           )}
         </div>
-        <Button
-          onClick={handleRefresh}
-          disabled={refreshing || isLoading}
-          variant="outline"
-          className="gap-2"
-        >
-          <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-          {refreshing ? "Refreshing..." : "Refresh"}
-        </Button>
+        <div className="flex gap-2">
+          {/* Sync Email Button - Only show for Google users who haven't synced */}
+          {user?.isGoogleUser && !checkingSyncStatus && !isSynced && (
+            <Button
+              onClick={handleSyncEmail}
+              disabled={isSyncing}
+              className="gap-2 w-full sm:w-auto shrink-0 bg-blue-600 hover:bg-blue-700"
+              size="sm"
+            >
+              <Mail className={cn("h-4 w-4", isSyncing && "animate-pulse")} />
+              <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync Email"}</span>
+              <span className="sm:hidden">{isSyncing ? "..." : "Sync"}</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            onClick={handleRefresh}
+            disabled={refreshing || isLoading}
+            variant="outline"
+            className="gap-2 w-full sm:w-auto shrink-0"
+            size="sm"
+          >
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+            <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+            <span className="sm:hidden">{refreshing ? "..." : "Refresh"}</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Error Display */}
-      {hasError && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
-              <AlertCircle className="h-5 w-5" />
-              <div>
-                <p className="font-semibold">Error loading dashboard data</p>
-                <p className="text-sm">{errorResponse || errorAging}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
         {summaryStats.map((stat, index) => (
           <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <p className="text-3xl font-bold mt-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{stat.title}</p>
+                  <p className="text-2xl sm:text-3xl font-bold mt-1 sm:mt-2">
                     {isLoading ? "..." : stat.value}
                   </p>
                 </div>
-                <div className={cn("p-3 rounded-full bg-muted", stat.color)}>
-                  <stat.icon className="h-6 w-6" />
+                <div className={cn("p-2 sm:p-3 rounded-full bg-muted shrink-0", stat.color)}>
+                  <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
               </div>
             </CardContent>
@@ -398,13 +470,13 @@ const EmailAnalytics = () => {
 
       {/* Section 1: Response Dashboard */}
       <div className="w-full">
-        <h2 className="text-xl font-semibold mb-3">Unreplied Emails by Category (24+ hrs)</h2>
+        <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">Unreplied Emails by Category (24+ hrs)</h2>
         <Card className="shadow-md">
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             {isLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading dashboard data...</span>
+              <div className="flex flex-col sm:flex-row items-center justify-center py-8 sm:py-16 gap-2">
+                <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+                <span className="text-sm sm:text-base">Loading dashboard data...</span>
               </div>
             ) : transformedResponseData.length > 0 ? (
               <PaginatedTable
@@ -416,10 +488,10 @@ const EmailAnalytics = () => {
                 pageSize={10}
               />
             ) : (
-              <div className="text-center py-16 text-muted-foreground">
-                <Mail className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                <p>No dashboard data available</p>
-                <Button onClick={handleRefresh} variant="outline" className="mt-4">
+              <div className="text-center py-8 sm:py-16 text-muted-foreground px-4">
+                <Mail className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 opacity-30" />
+                <p className="text-sm sm:text-base">No dashboard data available</p>
+                <Button onClick={handleRefresh} variant="outline" className="mt-3 sm:mt-4" size="sm">
                   Try Refreshing
                 </Button>
               </div>
@@ -430,17 +502,17 @@ const EmailAnalytics = () => {
 
       {/* Section 2: Aging Report */}
       <div>
-        <h2 className="text-xl font-semibold mb-2">Aging Report</h2>
-        <p className="text-sm text-muted-foreground mb-3">
+        <h2 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">Aging Report</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
           Time-based analysis of unreplied emails per user
         </p>
 
         <Card className="shadow-md">
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             {isLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading aging data...</span>
+              <div className="flex flex-col sm:flex-row items-center justify-center py-8 sm:py-16 gap-2">
+                <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+                <span className="text-sm sm:text-base">Loading aging data...</span>
               </div>
             ) : transformedAgingData.length > 0 ? (
               <PaginatedTable
@@ -452,9 +524,9 @@ const EmailAnalytics = () => {
                 pageSize={10}
               />
             ) : (
-              <div className="text-center py-16 text-muted-foreground">
-                <Clock className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                <p>No aging data available</p>
+              <div className="text-center py-8 sm:py-16 text-muted-foreground px-4">
+                <Clock className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 opacity-30" />
+                <p className="text-sm sm:text-base">No aging data available</p>
               </div>
             )}
           </CardContent>
@@ -463,7 +535,7 @@ const EmailAnalytics = () => {
 
       {/* Email Details Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-4xl" onClose={() => setModalOpen(false)}>
+        <DialogContent className="max-w-full sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto" onClose={() => setModalOpen(false)}>
           <DialogHeader>
             <DialogTitle>Unreplied Emails - {selectedCategory}</DialogTitle>
             <DialogDescription>
@@ -473,7 +545,7 @@ const EmailAnalytics = () => {
               Unreplied time is measured as duration from email receipt to 7 AM refresh.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody className="space-y-3">
+          <DialogBody className="space-y-2 sm:space-y-3">
             {/* Email List */}
             {getEmailsForCategory().length > 0 ? (
               getPaginatedEmailsForCategory().map((email, index) => {
@@ -484,19 +556,19 @@ const EmailAnalytics = () => {
                 
                 return (
                   <Card key={index} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="space-y-2 sm:space-y-3">
                         <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{emailInfo.name}</p>
-                            <p className="text-xs text-muted-foreground">{emailInfo.email}</p>
+                          <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium truncate">{emailInfo.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{emailInfo.email}</p>
                           </div>
                         </div>
                         <div>
-                          <p className="font-semibold text-sm">{email.subject}</p>
+                          <p className="font-semibold text-xs sm:text-sm break-words">{email.subject}</p>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           <Badge variant="outline" className="text-xs">
                             <Clock className="h-3 w-3 mr-1 inline" />
                             {dateField}
@@ -529,27 +601,28 @@ const EmailAnalytics = () => {
                 );
               })
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No unreplied emails in this category</p>
+              <div className="text-center py-6 sm:py-8 text-muted-foreground px-4">
+                <Mail className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 opacity-50" />
+                <p className="text-sm sm:text-base">No unreplied emails in this category</p>
               </div>
             )}
 
             {/* Email Pagination Controls */}
             {getEmailsForCategory().length > 0 && (
-              <div className="flex items-center justify-between px-1 py-2 border-t">
-                <div className="flex-1 text-sm text-muted-foreground">
-                  Showing {((emailCurrentPage - 1) * emailsPerPage) + 1} to{" "}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 px-1 py-2 sm:py-3 border-t">
+                <div className="flex-1 text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                  <span className="hidden sm:inline">Showing </span>
+                  {((emailCurrentPage - 1) * emailsPerPage) + 1} to{" "}
                   {Math.min(emailCurrentPage * emailsPerPage, getEmailsForCategory().length)} of{" "}
-                  {getEmailsForCategory().length} emails
+                  {getEmailsForCategory().length} <span className="hidden sm:inline">emails</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-2">
-                    <p className="text-sm font-medium">Per page</p>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-2">
+                  <div className="flex items-center justify-center sm:justify-start space-x-2">
+                    <p className="text-xs sm:text-sm font-medium whitespace-nowrap">Per page</p>
                     <Select
                       value={emailsPerPage}
                       onChange={handleEmailsPerPageChange}
-                      className="h-9 w-[60px]"
+                      className="h-8 sm:h-9 w-[60px] text-xs sm:text-sm"
                     >
                       <option value={5}>5</option>
                       <option value={10}>10</option>
@@ -557,7 +630,7 @@ const EmailAnalytics = () => {
                       <option value={20}>20</option>
                     </Select>
                   </div>
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center justify-center space-x-1">
                     <Button
                       variant="outline"
                       size="sm"
@@ -574,7 +647,7 @@ const EmailAnalytics = () => {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm font-medium px-2">
+                    <span className="text-xs sm:text-sm font-medium px-1 sm:px-2">
                       {emailCurrentPage} of {totalEmailPages}
                     </span>
                     <Button

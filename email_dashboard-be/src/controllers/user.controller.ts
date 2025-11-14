@@ -69,7 +69,7 @@ export class UserController {
       }
 
       // Validate role
-      if (!['admin', 'user'].includes(role)) {
+      if (!['admin', 'user','super admin'].includes(role)) {
         res.status(400).json({
           success: false,
           message: 'Invalid role. Must be either "admin" or "user"',
@@ -247,7 +247,7 @@ export class UserController {
       }
 
       // Validate role if provided
-      if (role && !['admin', 'user'].includes(role)) {
+      if (role && !['admin', 'user','super admin'].includes(role)) {
         res.status(400).json({
           success: false,
           message: 'Invalid role. Must be either "admin" or "user"',

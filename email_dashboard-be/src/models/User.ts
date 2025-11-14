@@ -9,7 +9,7 @@ export interface User {
   fullName: string;
   email: string;
   password: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'super admin';
   createdAt: Date;
   updatedAt?: Date;
   department?: string;
@@ -23,7 +23,7 @@ export interface CreateUserData {
   fullName: string;
   email: string;
   password: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'super admin';
   department: string;
 }
 
@@ -32,7 +32,7 @@ export interface CreateUserData {
  */
 export interface UpdateUserData {
   fullName?: string;
-  role?: 'admin' | 'user';
+  role?: 'admin' | 'user' | 'super admin';
   department?: string;
 }
 

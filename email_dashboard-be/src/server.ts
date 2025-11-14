@@ -16,17 +16,11 @@ async function initializeApp(): Promise<void> {
   let mongoConnected = false;
 
   try {
-    // Try to connect to SAP HANA database (optional in development)
-    try {
-      await db.connect();
-      dbConnected = true;
-      logger.info('SAP HANA Database connected successfully');
-    } catch (dbError) {
-      logger.warn('SAP HANA Database connection failed - running in offline mode', {
-        error: dbError instanceof Error ? dbError.message : 'Unknown database error',
-        note: 'API will start but database operations will fail. Configure SAP_HANA_* variables in .env file'
-      });
-    }
+    // NOTE: SAP HANA connection is now lazy-loaded (connects only when needed for customer data queries)
+    // User authentication uses Google OAuth and LDAP (MongoDB), not SAP HANA
+    // SAP HANA is only used for customer sales data queries
+    logger.info('SAP HANA connection will be established on-demand when customer data is requested');
+    dbConnected = false; // Mark as not connected on startup
 
     // Try to connect to MongoDB (for analytics dashboard)
     try {
@@ -47,12 +41,9 @@ async function initializeApp(): Promise<void> {
       logger.info(`API endpoints available at http://localhost:${PORT}/api`);
       logger.info(`Network access available at http://192.168.10.6:${PORT}/api`);
 
-      if (!dbConnected) {
-        logger.warn('⚠️  SAP HANA Database not connected - authentication and user management endpoints will not work');
-        logger.info('To enable database features:');
-        logger.info('   1. Configure SAP HANA database connection in .env file');
-        logger.info('   2. Run: pnpm run setup:db (when database is configured)');
-      }
+      // SAP HANA connection is lazy-loaded - no warning needed
+      logger.info('ℹ️  SAP HANA will connect automatically when customer data is requested');
+      logger.info('   Authentication uses Google OAuth and LDAP (MongoDB only)');
 
       if (!mongoConnected) {
         logger.warn('⚠️  MongoDB not connected - dashboard endpoints will not work');
@@ -61,8 +52,8 @@ async function initializeApp(): Promise<void> {
         logger.info('   2. Ensure MongoDB is running and accessible');
       }
 
-      if (dbConnected && mongoConnected) {
-        logger.info('✅ All database connections established successfully');
+      if (mongoConnected) {
+        logger.info('✅ MongoDB connected - Application ready');
       }
     });
 

@@ -180,7 +180,7 @@ const ProfileSettings = () => {
     }
   };
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = ["admin","super admin"].includes(currentUser?.role);
 
   if (isLoadingUser) {
     return (
@@ -233,19 +233,19 @@ const ProfileSettings = () => {
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 sm:p-6">
+        <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
           {successMessage && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
               {successMessage}
             </div>
           )}
           {errorMessage && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
               {errorMessage}
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs sm:text-sm font-medium mb-2">Full Name</label>
               <Input
@@ -320,14 +320,14 @@ const ProfileSettings = () => {
           </div>
           <CardDescription className="text-xs sm:text-sm">Update your password to keep your account secure</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 p-4 sm:p-6">
+        <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
           {passwordSuccess && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
               {passwordSuccess}
             </div>
           )}
           {passwordError && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
               {passwordError}
             </div>
           )}
@@ -343,7 +343,7 @@ const ProfileSettings = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs sm:text-sm font-medium mb-2">New Password</label>
               <Input

@@ -59,6 +59,13 @@ class AuthApiService extends BaseApiService {
   async refreshToken() {
     return this.post('/auth/refresh');
   }
+
+  /**
+   * Check if user has synced their email
+   */
+  async checkEmailSyncStatus() {
+    return this.get('/auth/email-sync-status');
+  }
 }
 
 // Export singleton instance

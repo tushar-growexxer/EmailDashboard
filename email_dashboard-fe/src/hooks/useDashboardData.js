@@ -60,8 +60,30 @@ export function useDashboardData({ type = 'response', userId = null, autoFetch =
       }
     } catch (err) {
       console.error(`Error fetching ${type} dashboard data:`, err);
-      setError(err.message || 'Failed to load dashboard data');
-      setData([]); // Set empty array on error
+      
+      // Handle 401 errors gracefully - don't break the UI
+      // The base API service will handle redirect if needed
+      if (err.message && err.message.includes('401')) {
+        console.warn('401 error in dashboard data fetch - authentication issue');
+        // Don't set error for 401 - let ProtectedRoute handle authentication
+        // Just set empty data so UI doesn't break
+        setData([]);
+        setError(null); // Clear error so UI doesn't show error state
+      } else {
+        // Convert technical error messages to user-friendly ones
+        let userFriendlyMessage = err.message || 'Failed to load dashboard data';
+        
+        if (err.message && (err.message.includes('User not found') || err.message.includes('user not found'))) {
+          userFriendlyMessage = 'User not found in database';
+        } else if (err.message && (err.message.includes('Network') || err.message.includes('fetch'))) {
+          userFriendlyMessage = 'Network error - unable to connect to server';
+        } else if (err.message && err.message.includes('403')) {
+          userFriendlyMessage = 'Access denied';
+        }
+        
+        setError(userFriendlyMessage);
+        setData([]); // Set empty array on error
+      }
     } finally {
       setLoading(false);
     }
@@ -96,7 +118,12 @@ export function useDashboardData({ type = 'response', userId = null, autoFetch =
   // Auto-fetch on mount if enabled
   useEffect(() => {
     if (autoFetch && user) {
-      fetchData();
+      // Add a small delay to ensure cookies are set after navigation
+      const timer = setTimeout(() => {
+        fetchData();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [autoFetch, fetchData, user]);
 

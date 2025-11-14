@@ -1,6 +1,7 @@
 import db from '../config/database';
 import cacheService from './cache.service';
 import logger from '../config/logger';
+import { allowedDomainModel } from '../models/AllowedDomain';
 
 /**
  * Customer Sales Service
@@ -8,24 +9,97 @@ import logger from '../config/logger';
  */
 class CustomerSalesService {
   private readonly CUSTOMER_SALES_CACHE_KEY = 'customer_sales_data';
-  private readonly schema = db.getConfig().schema;
+  // NOTE: No default schema - each domain must have its own database configured
+
+  /**
+   * Get database schema for a given domain
+   * @param {string} domain - Domain name (e.g., 'example.com')
+   * @returns {Promise<string | null>} Database schema name or null if not configured
+   */
+  private async getSchemaForDomain(domain: string): Promise<string | null> {
+    try {
+      logger.info(`[SCHEMA-LOOKUP] ========== Schema Lookup ==========`);
+      logger.info(`[SCHEMA-LOOKUP] Input domain: ${domain}`);
+      
+      if (!domain) {
+        logger.warn('[SCHEMA-LOOKUP] No domain provided, cannot determine schema');
+        return null;
+      }
+
+      const normalizedDomain = domain.toLowerCase().trim().replace(/^www\./, '');
+      logger.info(`[SCHEMA-LOOKUP] Normalized domain: ${normalizedDomain}`);
+      logger.info(`[SCHEMA-LOOKUP] Querying allowed domains table...`);
+      
+      const domainRecord = await allowedDomainModel.findByDomain(normalizedDomain);
+      logger.info(`[SCHEMA-LOOKUP] Domain record found: ${!!domainRecord}`);
+      
+      if (domainRecord?.database) {
+        logger.info(`[SCHEMA-LOOKUP] ✓ Database schema: "${domainRecord.database}"`);
+        logger.info(`[SCHEMA-LOOKUP] Domain is allowed: true`);
+        return domainRecord.database;
+      }
+
+      logger.info(`[SCHEMA-LOOKUP] ✗ No database configured for domain "${normalizedDomain}"`);
+      return null;
+    } catch (error) {
+      logger.error(`[SCHEMA-LOOKUP] ========== Error in Schema Lookup ==========`);
+      logger.error(`[SCHEMA-LOOKUP] Domain: "${domain}"`);
+      logger.error(`[SCHEMA-LOOKUP] Error details:`, error);
+      if (error instanceof Error) {
+        logger.error(`[SCHEMA-LOOKUP] Error message: ${error.message}`);
+      }
+      return null;
+    }
+  }
 
   /**
    * Get customer sales data from HANA
    * Returns cached data if available, otherwise fetches from HANA
+   * @param {string} userEmail - User's email address to determine domain and database (optional)
    * @returns {Promise<any[]>} Customer sales data
    */
-  async getCustomerSalesData(): Promise<any[]> {
+  async getCustomerSalesData(userEmail?: string): Promise<any[]> {
     try {
-      // Check cache first
-      const cachedData = cacheService.get<any[]>(this.CUSTOMER_SALES_CACHE_KEY);
-      if (cachedData) {
-        logger.info('Customer sales data retrieved from cache');
-        return cachedData;
+      logger.info(`[CUSTOMER-SERVICE] ========== Get Customer Sales Data ==========`);
+      logger.info(`[CUSTOMER-SERVICE] User email: ${userEmail || 'not provided'}`);
+      
+      // Determine schema based on user's domain
+      let schema: string | null = null;
+      if (userEmail) {
+        const domain = userEmail.split('@')[1];
+        logger.info(`[CUSTOMER-SERVICE] Extracted domain: ${domain}`);
+        logger.info(`[CUSTOMER-SERVICE] Looking up database schema for domain...`);
+        schema = await this.getSchemaForDomain(domain);
+        logger.info(`[CUSTOMER-SERVICE] Schema lookup result: ${schema || 'not found'}`);
+        
+        // If no schema configured for this domain, return empty array
+        if (!schema) {
+          logger.info(`[CUSTOMER-SERVICE] No database configured for domain "${domain}", returning empty customer list`);
+          return [];
+        }
+      } else {
+        // If no user email provided, cannot determine schema
+        logger.warn('[CUSTOMER-SERVICE] No user email provided, cannot determine database schema');
+        return [];
       }
 
+      // Use domain-specific cache key
+      const cacheKey = `${this.CUSTOMER_SALES_CACHE_KEY}_${schema}`;
+      logger.info(`[CUSTOMER-SERVICE] Cache key: ${cacheKey}`);
+
+      // Check cache first
+      logger.info(`[CUSTOMER-SERVICE] Checking cache...`);
+      const cachedData = cacheService.get<any[]>(cacheKey);
+      if (cachedData) {
+        logger.info(`[CUSTOMER-SERVICE] ✓ Cache HIT - returning ${cachedData.length} records from cache`);
+        return cachedData;
+      }
+      logger.info(`[CUSTOMER-SERVICE] ✗ Cache MISS - fetching from database`);
+
       // Fetch from HANA
-      logger.info('Fetching customer sales data from HANA...');
+      logger.info(`[CUSTOMER-SERVICE] Connecting to SAP HANA database...`);
+      logger.info(`[CUSTOMER-SERVICE] Schema: ${schema}`);
+      logger.info(`[CUSTOMER-SERVICE] Preparing SQL query...`);
 
       const query = `
         WITH sales AS (
@@ -33,8 +107,8 @@ class CustomerSalesService {
             T0."CardCode",
             SUM(T1."Quantity") AS "Total Quantity",
             SUM(T0."DocTotal") AS "Total Value"
-          FROM ${this.schema}.OINV T0
-          JOIN ${this.schema}.INV1 T1 ON T0."DocEntry" = T1."DocEntry"
+          FROM ${schema}.OINV T0
+          JOIN ${schema}.INV1 T1 ON T0."DocEntry" = T1."DocEntry"
           WHERE T0."CANCELED" = 'N' 
             AND T0."CardCode" LIKE 'C%'
             AND T0."DocDate" >= ADD_YEARS(
@@ -51,7 +125,7 @@ class CustomerSalesService {
           SELECT 
             T1."CardCode",
             MIN(T1."E_MailL") AS "Email"
-          FROM ${this.schema}.OCPR T1
+          FROM ${schema}.OCPR T1
           WHERE T1."E_MailL" IS NOT NULL
           GROUP BY T1."CardCode"
         )
@@ -65,7 +139,7 @@ class CustomerSalesService {
           e."Email",
           s."Total Quantity",
           s."Total Value"
-        FROM ${this.schema}.OCRD T0
+        FROM ${schema}.OCRD T0
         LEFT JOIN emails e ON T0."CardCode" = e."CardCode"
         LEFT JOIN sales s ON s."CardCode" = T0."CardCode"
         WHERE T0."validFor" = 'Y' 
@@ -74,19 +148,31 @@ class CustomerSalesService {
         ORDER BY T0."CardCode"
       `;
 
+      logger.info(`[CUSTOMER-SERVICE] Executing query on database...`);
+      const startTime = Date.now();
       const data = await db.query(query);
+      const duration = Date.now() - startTime;
+      logger.info(`[CUSTOMER-SERVICE] Query executed in ${duration}ms`);
+      logger.info(`[CUSTOMER-SERVICE] Query returned ${data?.length || 0} records`);
 
       // Cache the data
       if (data && data.length > 0) {
-        cacheService.set(this.CUSTOMER_SALES_CACHE_KEY, data);
-        logger.info(`Customer sales data fetched and cached (${data.length} records)`);
+        logger.info(`[CUSTOMER-SERVICE] Caching ${data.length} records...`);
+        cacheService.set(cacheKey, data);
+        logger.info(`[CUSTOMER-SERVICE] ✓ Data cached successfully`);
       } else {
-        logger.warn('Customer sales query returned no data');
+        logger.warn(`[CUSTOMER-SERVICE] ⚠ Query returned no data (schema: ${schema})`);
       }
 
+      logger.info(`[CUSTOMER-SERVICE] ========== Operation Complete ==========`);
       return data;
     } catch (error) {
-      logger.error('Error fetching customer sales data:', error);
+      logger.error('[CUSTOMER-SERVICE] ========== Error Fetching Customer Sales Data ==========');
+      logger.error('[CUSTOMER-SERVICE] Error details:', error);
+      if (error instanceof Error) {
+        logger.error(`[CUSTOMER-SERVICE] Error message: ${error.message}`);
+        logger.error(`[CUSTOMER-SERVICE] Error stack: ${error.stack}`);
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch customer sales data';
       throw new Error(errorMessage);
@@ -97,11 +183,12 @@ class CustomerSalesService {
    * Search customers by name
    * @param {string} searchTerm - Search term for customer name
    * @param {number} limit - Maximum number of results (default: 10)
+   * @param {string} userEmail - User's email address to determine domain and database (optional)
    * @returns {Promise<any[]>} Matching customers
    */
-  async searchCustomers(searchTerm: string, limit: number = 10): Promise<any[]> {
+  async searchCustomers(searchTerm: string, limit: number = 10, userEmail?: string): Promise<any[]> {
     try {
-      const allCustomers = await this.getCustomerSalesData();
+      const allCustomers = await this.getCustomerSalesData(userEmail);
 
       if (!searchTerm || searchTerm.trim() === '') {
         return allCustomers.slice(0, limit);
@@ -125,11 +212,12 @@ class CustomerSalesService {
   /**
    * Get customer by CardCode
    * @param {string} cardCode - Customer card code
+   * @param {string} userEmail - User's email address to determine domain and database (optional)
    * @returns {Promise<any | null>} Customer data or null
    */
-  async getCustomerByCardCode(cardCode: string): Promise<any | null> {
+  async getCustomerByCardCode(cardCode: string, userEmail?: string): Promise<any | null> {
     try {
-      const allCustomers = await this.getCustomerSalesData();
+      const allCustomers = await this.getCustomerSalesData(userEmail);
       const customer = allCustomers.find((c) => c.CardCode === cardCode);
 
       if (!customer) {

@@ -17,11 +17,16 @@ const DashboardLayout = () => {
       <div
         className={cn(
           "flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "ml-[230px]" : "ml-[72px]"
+          // Responsive sidebar margin - no margin on mobile (sidebar hidden), adjusted on larger screens
+          "ml-0",
+          // On small screens and up, add margin based on sidebar state
+          "sm:ml-[72px]",
+          // When sidebar is open on small screens and up, use full width
+          isSidebarOpen && "sm:ml-[230px]"
         )}
       >
         <DashboardHeader />
-        <main className="flex-1 p-6 md:p-8">
+        <main className="flex-1 p-2 sm:p-4 md:p-6 lg:p-8">
           <Outlet />
         </main>
         <Footer />

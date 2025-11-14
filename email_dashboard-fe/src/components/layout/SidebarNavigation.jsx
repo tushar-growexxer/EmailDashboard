@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutDashboard, TrendingUp, Settings, BarChart3 } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Settings, BarChart3, Globe } from "lucide-react";
 import NavigationItem from "./NavigationItem";
 
 const navigationItems = [
@@ -19,8 +19,8 @@ const navigationItems = [
 const SidebarNavigation = ({ userRole }) => {
   const items = [...navigationItems];
 
-  // Add Settings for admin only (case-insensitive check)
-  if (userRole && userRole.toLowerCase() === "admin") {
+  // Add Settings for admin and super admin (case-insensitive check)
+  if (userRole && (userRole.toLowerCase() === "admin" || userRole.toLowerCase() === "super admin")) {
     items.push({
       icon: Settings,
       label: "Settings",
@@ -29,7 +29,7 @@ const SidebarNavigation = ({ userRole }) => {
   }
 
   return (
-    <nav className="flex-1 p-4 overflow-y-auto">
+    <nav className="flex-1 p-2 sm:p-3 md:p-4 overflow-y-auto">
       <div className="flex flex-col space-y-1">
         {items.map((item) => (
           <NavigationItem

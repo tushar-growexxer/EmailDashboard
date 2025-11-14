@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { userController } from '../controllers/user.controller';
-import { authenticateToken, requireAdmin } from '../middlewares/auth.middleware';
+import { authenticateToken, authorizeRoles } from '../middlewares/auth.middleware';
 
 /**
- * User management routes (Admin only)
+ * User management routes (Admin and Super Admin only)
  */
 const router: Router = Router();
 
-// Apply authentication and admin authorization to all routes
+// Apply authentication and admin/super admin authorization to all routes
 router.use(authenticateToken);
-router.use(requireAdmin);
+router.use(authorizeRoles(['admin', 'super admin']));
 
 /**
  * @route   POST /api/users

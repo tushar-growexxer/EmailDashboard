@@ -177,10 +177,19 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const result = await authService.getProfile();
-      if (result.success) {
+      if (result.success && result.user) {
+        // Update user state
         setUser(result.user);
+        // IMPORTANT: Also save to localStorage so it persists across navigation
+        authService.setUser(result.user);
+        return { success: true, user: result.user };
+      } else {
+        console.error('Failed to refresh profile:', result.message);
+        return { success: false, message: result.message };
       }
     } catch (error) {
+      console.error('Error refreshing profile:', error);
+      return { success: false, message: error.message || 'Failed to refresh profile' };
     }
   };
 
@@ -192,11 +201,17 @@ export const AuthProvider = ({ children }) => {
     setSessionWarning(null);
   };
 
+  // Compute isAuthenticated - check both context state and localStorage
+  // This ensures authentication status is accurate even if context hasn't updated
+  const storedUser = authService.getUser();
+  const computedIsAuthenticated = !!user || !!storedUser;
+
   const value = {
     user,
+    setUser, // Expose setUser for Google OAuth callback
     token: null, // Tokens are in httpOnly cookies
     isLoading,
-    isAuthenticated: !!user, // Use user presence instead of token
+    isAuthenticated: computedIsAuthenticated, // Check both context and localStorage
     sessionWarning,
     login,
     logout,

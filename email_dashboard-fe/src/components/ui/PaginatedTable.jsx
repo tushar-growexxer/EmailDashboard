@@ -112,10 +112,10 @@ export function PaginatedTable({
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-3 sm:space-y-4">
       {/* Search */}
       {searchKey && (
-        <div className="px-2 pt-2 pb-0">
+        <div className="px-2 sm:px-4 pt-2 pb-0">
           <Input
             placeholder={searchPlaceholder}
             value={searchTerm}
@@ -123,14 +123,14 @@ export function PaginatedTable({
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="max-w-sm"
+            className="max-w-full sm:max-w-sm text-sm sm:text-base"
           />
         </div>
       )}
 
       {/* Table Container - Scrollable */}
-      <div className="w-full px-2">
-      <div className="relative border rounded-md overflow-x-auto">
+      <div className="w-full px-2 sm:px-4">
+      <div className="relative border rounded-md overflow-x-auto -mx-2 sm:mx-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -183,19 +183,20 @@ export function PaginatedTable({
 
       {/* Pagination */}
       {totalPages > 0 && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Showing {((currentPage - 1) * rowsPerPage) + 1} to{" "}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-2 sm:px-4 py-3 sm:py-4">
+          <div className="flex-1 text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+            <span className="hidden sm:inline">Showing </span>
+            {((currentPage - 1) * rowsPerPage) + 1} to{" "}
             {Math.min(currentPage * rowsPerPage, sortedData.length)} of{" "}
-            {sortedData.length} results
+            {sortedData.length} <span className="hidden sm:inline">results</span>
           </div>
-          <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Rows per page</p>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:space-x-6 lg:space-x-8">
+            <div className="flex items-center justify-center sm:justify-start space-x-2">
+              <p className="text-xs sm:text-sm font-medium whitespace-nowrap">Rows per page</p>
               <Select
                 value={rowsPerPage}
                 onChange={handleRowsPerPageChange}
-                className="h-9 w-[70px]"
+                className="h-8 sm:h-9 w-[70px] text-xs sm:text-sm"
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -204,45 +205,49 @@ export function PaginatedTable({
                 <option value={50}>50</option>
               </Select>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+            <div className="flex w-full sm:w-[100px] items-center justify-center text-xs sm:text-sm font-medium">
               Page {currentPage} of {totalPages}
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
+                className="hidden h-7 w-7 sm:h-8 sm:w-8 p-0 lg:flex"
                 onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
+                size="sm"
               >
                 <span className="sr-only">Go to first page</span>
-                <ChevronsLeft className="h-4 w-4" />
+                <ChevronsLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0"
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
+                size="sm"
               >
                 <span className="sr-only">Go to previous page</span>
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0"
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                size="sm"
               >
                 <span className="sr-only">Go to next page</span>
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
+                className="hidden h-7 w-7 sm:h-8 sm:w-8 p-0 lg:flex"
                 onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages}
+                size="sm"
               >
                 <span className="sr-only">Go to last page</span>
-                <ChevronsRight className="h-4 w-4" />
+                <ChevronsRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>

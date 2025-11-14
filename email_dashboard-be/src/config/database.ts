@@ -54,32 +54,35 @@ class DatabaseConnection {
    */
   async connect(): Promise<void> {
     try {
+      logger.info(`[DB-CONNECT] ========== Database Connection ==========`);
+      
       if (this.client && this.isConnected()) {
-        logger.info('Database client already connected');
+        logger.info('[DB-CONNECT] ✓ Database client already connected');
         return;
       }
       if (this.isConnecting) {
-        logger.info('Database connect already in progress');
+        logger.info('[DB-CONNECT] Connection already in progress, waiting...');
         return;
       }
 
       // Clean up any existing client before creating a new one
       if (this.client) {
-        logger.warn('Cleaning up existing disconnected client');
+        logger.warn('[DB-CONNECT] Cleaning up existing disconnected client');
         try {
           this.client.removeAllListeners();
           this.client.end();
         } catch (cleanupErr) {
-          logger.warn('Error during client cleanup:', cleanupErr);
+          logger.warn('[DB-CONNECT] Error during client cleanup:', cleanupErr);
         }
         this.client = null;
       }
 
       this.isConnecting = true;
-      logger.info(
-        `Attempting to connect to SAP HANA database at ${this.config.host}:${this.config.port}`
-      );
-      logger.info(`Using user: ${this.config.user}, schema: ${this.config.schema}`);
+      logger.info(`[DB-CONNECT] Attempting to connect to SAP HANA database`);
+      logger.info(`[DB-CONNECT] Host: ${this.config.host}`);
+      logger.info(`[DB-CONNECT] Port: ${this.config.port}`);
+      logger.info(`[DB-CONNECT] User: ${this.config.user}`);
+      logger.info(`[DB-CONNECT] Schema: ${this.config.schema}`);
 
       this.client = hdb.createClient({
         host: this.config.host,
@@ -113,25 +116,31 @@ class DatabaseConnection {
         this.client!.connect((err: any) => {
           this.isConnecting = false;
           if (err) {
-            logger.error(
-              `Database connection failed to ${this.config.host}:${this.config.port}:`,
-              err
-            );
+            logger.error(`[DB-CONNECT] ========== Connection Failed ==========`);
+            logger.error(`[DB-CONNECT] Host: ${this.config.host}:${this.config.port}`);
+            logger.error(`[DB-CONNECT] Error details:`, err);
+            if (err.message) {
+              logger.error(`[DB-CONNECT] Error message: ${err.message}`);
+            }
+            if (err.code) {
+              logger.error(`[DB-CONNECT] Error code: ${err.code}`);
+            }
             reject(err);
           } else {
-            logger.info(
-              `✅ Connected to SAP HANA database successfully at ${this.config.host}:${this.config.port}`
-            );
-            logger.info(`Connection state after connect: ${this.client!.readyState}`);
+            logger.info(`[DB-CONNECT] ✅ Connected to SAP HANA database successfully`);
+            logger.info(`[DB-CONNECT] Connection state: ${this.client!.readyState}`);
 
             // Test the connection immediately with a simple query
+            logger.info(`[DB-CONNECT] Running connection test query...`);
             this.client!.exec('SELECT 1 FROM DUMMY', [], (testErr: any) => {
               if (testErr) {
-                logger.error('Connection test query failed immediately after connect:', testErr);
+                logger.error('[DB-CONNECT] ❌ Connection test query failed:', testErr);
                 reject(new Error('Connection test failed: ' + testErr.message));
               } else {
-                logger.info('✅ Connection test query successful');
+                logger.info('[DB-CONNECT] ✅ Connection test query successful');
+                logger.info('[DB-CONNECT] Starting keepalive mechanism...');
                 this.startKeepalive();
+                logger.info('[DB-CONNECT] ========== Connection Complete ==========');
                 resolve();
               }
             });
@@ -183,15 +192,29 @@ class DatabaseConnection {
    * @returns {Promise<any[]>} Query results
    */
   async query(sql: string, params: any[] = []): Promise<any[]> {
+    logger.info(`[DB-QUERY] ========== Database Query ==========`);
+    logger.info(`[DB-QUERY] SQL: ${sql.substring(0, 200)}${sql.length > 200 ? '...' : ''}`);
+    logger.info(`[DB-QUERY] Params count: ${params.length}`);
+    
     if (!this.client || !this.isConnected()) {
-      logger.warn('Client not connected, attempting to reconnect before query');
+      logger.warn('[DB-QUERY] Client not connected, attempting to reconnect before query');
       await this.connect();
     }
 
     try {
-      return await this.execWithRetry((cb) => this.client!.exec(sql, params, cb));
+      logger.info(`[DB-QUERY] Executing query...`);
+      const startTime = Date.now();
+      const result = await this.execWithRetry((cb) => this.client!.exec(sql, params, cb));
+      const duration = Date.now() - startTime;
+      logger.info(`[DB-QUERY] ✓ Query executed successfully in ${duration}ms`);
+      logger.info(`[DB-QUERY] Rows returned: ${result?.length || 0}`);
+      return result;
     } catch (err) {
-      logger.error('Database query failed after retry:', err);
+      logger.error('[DB-QUERY] ========== Database Query Failed ==========');
+      logger.error('[DB-QUERY] Error details:', err);
+      if (err instanceof Error) {
+        logger.error(`[DB-QUERY] Error message: ${err.message}`);
+      }
       throw err;
     }
   }

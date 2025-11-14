@@ -1050,23 +1050,23 @@ const SentimentDashboard = () => {
   };
 
   return (
-    <div className="space-y-6 w-full mx-auto px-4">
+    <div className="space-y-4 sm:space-y-6 w-full mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-1 sm:mb-2">
             Customer Sentiment Analysis
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Sentiment trends over time for customers
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {/* Demo Data Toggle */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-card border rounded-lg">
+          <div className="flex items-center gap-2 px-2 sm:px-3 py-2 bg-card border rounded-lg text-xs sm:text-sm">
             <Database
               className={cn(
-                "h-4 w-4",
+                "h-4 w-4 shrink-0",
                 showDemoData ? "text-gray-400" : "text-green-600"
               )}
             />
@@ -1077,34 +1077,36 @@ const SentimentDashboard = () => {
                 onChange={(e) => setShowDemoData(e.target.checked)}
                 className="rounded border-gray-300 text-primary focus:ring-primary"
               />
-              <span className="text-sm font-medium">Show Demo Data</span>
+              <span className="font-medium whitespace-nowrap">Show Demo Data</span>
             </label>
             {liveDataLoading && !showDemoData && (
-              <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+              <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
             )}
           </div>
           <Button
             onClick={handleRefresh}
             disabled={refreshing}
             variant="outline"
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto shrink-0"
+            size="sm"
           >
             <RefreshCw
               className={cn("h-4 w-4", refreshing && "animate-spin")}
             />
-            {refreshing ? "Refreshing..." : "Refresh"}
+            <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+            <span className="sm:hidden">{refreshing ? "..." : "Refresh"}</span>
           </Button>
         </div>
       </div>
 
       {/* Main Content Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-3 sm:gap-4">
         {/* Left Panel - Top 10 Customers */}
-        <div className="xl:col-span-1">
+        <div className="xl:col-span-1 order-2 xl:order-1">
           <Card className="flex flex-col">
-            <CardHeader>
+            <CardHeader className="p-3 sm:p-6">
               {/* Toggle Buttons */}
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-3 sm:mb-4">
                 <Button
                   variant={viewMode === "top10" ? "default" : "outline"}
                   size="sm"
@@ -1115,7 +1117,7 @@ const SentimentDashboard = () => {
                     setSelectedDetailCustomer(mockData.customers[0]);
                     setBusinessType("All");
                   }}
-                  className="flex-1"
+                  className="flex-1 text-xs sm:text-sm"
                 >
                   Top 10
                 </Button>
@@ -1123,24 +1125,24 @@ const SentimentDashboard = () => {
                   variant={viewMode === "other" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setViewMode("other")}
-                  className="flex-1"
+                  className="flex-1 text-xs sm:text-sm"
                 >
                   Other
                 </Button>
               </div>
 
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                {viewMode === "top10" ? "Top 10 Customers" : "Search Customer"}
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2 flex-wrap">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                <span className="min-w-0">{viewMode === "top10" ? "Top 10 Customers" : "Search Customer"}</span>
                 {!showDemoData && viewMode === "top10" && (
-                  <Badge variant="outline" className="text-xs ml-2">
+                  <Badge variant="outline" className="text-xs ml-2 shrink-0">
                     Live
                   </Badge>
                 )}
               </CardTitle>
 
               {/* Filters based on view mode */}
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
                 {viewMode === "top10" ? (
                   <>
                     <BusinessTypeFilter
@@ -1162,11 +1164,11 @@ const SentimentDashboard = () => {
                   <>
                     {/* Customer Search with Dropdown */}
                     <div className="search-container">
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                         Search Customer
                       </label>
                       <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                        <Search className="absolute left-2 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground z-10" />
                         <Input
                           placeholder="Search by customer name or code..."
                           value={searchTerm}
@@ -1181,7 +1183,7 @@ const SentimentDashboard = () => {
                               setShowDropdown(true);
                             }
                           }}
-                          className="pl-9"
+                          className="pl-7 sm:pl-9 text-xs sm:text-sm"
                         />
                         {searchLoading && (
                           <div className="absolute right-3 top-3 z-10">
@@ -1191,21 +1193,21 @@ const SentimentDashboard = () => {
 
                         {/* Dropdown Results */}
                         {showDropdown && searchResults.length > 0 && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
                             {searchResults.map((customer) => (
                               <div
                                 key={customer.CardCode}
                                 onClick={() => handleSelectCustomer(customer)}
                                 className={cn(
-                                  "p-3 cursor-pointer hover:bg-gray-50 border-b last:border-b-0 transition-colors",
+                                  "p-2 sm:p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-b-0 transition-colors",
                                   selectedSearchCustomer?.CardCode ===
-                                    customer.CardCode && "bg-blue-50"
+                                    customer.CardCode && "bg-blue-50 dark:bg-blue-900/20"
                                 )}
                               >
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 min-w-0">
                                     <p
-                                      className="font-medium text-sm truncate"
+                                      className="font-medium text-xs sm:text-sm truncate"
                                       title={customer.CardName}
                                     >
                                       {customer.CardName}
@@ -1243,7 +1245,7 @@ const SentimentDashboard = () => {
 
                       {/* Selected customer info */}
                       {selectedSearchCustomer && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded-md flex items-center justify-between">
+                        <div className="mt-2 p-2 sm:p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-md flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <p
                               className="text-xs font-medium truncate"
@@ -1258,7 +1260,7 @@ const SentimentDashboard = () => {
                               setSearchTerm("");
                               setSelectedDetailCustomer(mockData.customers[0]);
                             }}
-                            className="ml-2 text-xs text-blue-600 hover:text-blue-800 shrink-0"
+                            className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 shrink-0 whitespace-nowrap"
                           >
                             Clear
                           </button>
@@ -1279,15 +1281,15 @@ const SentimentDashboard = () => {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
               {viewMode === "top10" ? (
                 <>
                   {/* Loading State */}
                   {liveDataLoading && !showDemoData && (
-                    <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center justify-center py-8 sm:py-12">
                       <div className="text-center">
-                        <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
+                        <RefreshCw className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Loading live data...
                         </p>
                       </div>
@@ -1298,10 +1300,10 @@ const SentimentDashboard = () => {
                   {!showDemoData &&
                     !liveDataLoading &&
                     displayCustomers.length === 0 && (
-                      <div className="flex items-center justify-center py-12">
+                      <div className="flex items-center justify-center py-8 sm:py-12">
                         <div className="text-center">
-                          <Database className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
-                          <p className="text-sm text-muted-foreground">
+                          <Database className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             No live data available
                           </p>
                         </div>
@@ -1327,21 +1329,21 @@ const SentimentDashboard = () => {
                               setSearchTerm("");
                             }}
                             className={cn(
-                              "p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm",
+                              "p-2 sm:p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm",
                               selectedDetailCustomer ===
                                 customerData.customer && !selectedSearchCustomer
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:border-primary/50"
                             )}
                           >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1 sm:mb-2">
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
                                 <span className="text-xs font-semibold text-muted-foreground shrink-0">
                                   #{index + 1}
                                 </span>
                                 <div className="flex flex-col min-w-0 flex-1">
                                   <span
-                                    className="font-medium text-sm break-words line-clamp-2"
+                                    className="font-medium text-xs sm:text-sm break-words line-clamp-2"
                                     title={customerData.customer}
                                   >
                                     {customerData.customer}
@@ -1371,10 +1373,10 @@ const SentimentDashboard = () => {
                   )}
                 </>
               ) : (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-center justify-center py-8 sm:py-12">
+                  <div className="text-center px-4">
+                    <Search className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50" />
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {selectedSearchCustomer
                         ? "Customer selected. View details on the right."
                         : "Search for a customer above"}
@@ -1387,35 +1389,36 @@ const SentimentDashboard = () => {
         </div>
 
         {/* Right Panel - Detailed Chart */}
-        <div className="xl:col-span-4">
+        <div className="xl:col-span-4 order-1 xl:order-2">
           <Card className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    {selectedSearchCustomer
-                      ? selectedSearchCustomer.CardName
-                      : currentData.length > 0 &&
-                        currentData[0].hasOwnProperty(
-                          selectedDetailCustomer || mockData.customers[0]
-                        )
-                      ? selectedDetailCustomer || mockData.customers[0]
-                      : mockData.customers[0]}{" "}
-                    - Sentiment Trends
+            <CardHeader className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                    <span className="min-w-0 truncate">
+                      {selectedSearchCustomer
+                        ? selectedSearchCustomer.CardName
+                        : currentData.length > 0 &&
+                          currentData[0].hasOwnProperty(
+                            selectedDetailCustomer || mockData.customers[0]
+                          )
+                        ? selectedDetailCustomer || mockData.customers[0]
+                        : mockData.customers[0]}{" "}
+                      - Sentiment Trends
+                    </span>
                   </CardTitle>
-                  <br />
-                  <CardDescription>
+                  <CardDescription className="text-xs sm:text-sm mt-1 sm:mt-2">
                     {useLast14Days
                       ? "Daily sentiment over last 14 days"
                       : `${timePeriod} sentiment trends`}
-                    <br />
-                    Lower scores indicate more positive sentiment
+                    <br className="hidden sm:block" />
+                    <span className="block sm:inline">Lower scores indicate more positive sentiment</span>
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
                   {/* Last 14 Days Toggle */}
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 text-xs sm:text-sm">
                     <input
                       type="checkbox"
                       id="useLast14DaysChart"
@@ -1425,7 +1428,7 @@ const SentimentDashboard = () => {
                     />
                     <label
                       htmlFor="useLast14DaysChart"
-                      className="text-sm font-medium cursor-pointer"
+                      className="font-medium cursor-pointer whitespace-nowrap"
                     >
                       Last 14 Days
                     </label>
@@ -1435,6 +1438,7 @@ const SentimentDashboard = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowDataTable(!showDataTable)}
+                      className="text-xs sm:text-sm"
                     >
                       {showDataTable ? "View Chart" : "View Data Table"}
                     </Button>
@@ -1446,19 +1450,19 @@ const SentimentDashboard = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-2 sm:p-4 lg:p-6">
               {/* Check if selected customer has sentiment data */}
               {selectedSearchCustomer ? (
                 <div
                   className="flex items-center justify-center"
-                  style={{ height: "calc(100vh - 400px)", minHeight: "400px" }}
+                  style={{ height: "calc(100vh - 400px)", minHeight: "300px" }}
                 >
-                  <div className="text-center">
-                    <Meh className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h3 className="text-lg font-semibold mb-2">
+                  <div className="text-center px-4">
+                    <Meh className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       Sentiment Data Not Available
                     </h3>
-                    <p className="text-muted-foreground max-w-md mb-4">
+                    <p className="text-sm sm:text-base text-muted-foreground max-w-md mb-4">
                       Sentiment analysis is not yet available for{" "}
                       <strong>{selectedSearchCustomer.CardName}</strong>.
                       Historical sentiment data will be displayed here once
@@ -1477,14 +1481,14 @@ const SentimentDashboard = () => {
               ) : currentData.length === 0 && !showDemoData ? (
                 <div
                   className="flex items-center justify-center"
-                  style={{ height: "calc(100vh - 400px)", minHeight: "400px" }}
+                  style={{ height: "calc(100vh - 400px)", minHeight: "300px" }}
                 >
-                  <div className="text-center">
-                    <BarChart3 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h3 className="text-lg font-semibold mb-2">
+                  <div className="text-center px-4">
+                    <BarChart3 className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       No Chart Data Available
                     </h3>
-                    <p className="text-muted-foreground max-w-md">
+                    <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
                       No sentiment data available for{" "}
                       <strong>{selectedDetailCustomer}</strong>.
                       <br />
@@ -1498,14 +1502,14 @@ const SentimentDashboard = () => {
                   className="overflow-x-auto"
                   style={{ maxHeight: "calc(100vh - 400px)" }}
                 >
-                  <table className="w-full text-sm">
+                  <table className="w-full text-xs sm:text-sm">
                     <thead className="bg-muted">
                       <tr>
-                        <th className="p-3 text-left font-medium">Date</th>
-                        <th className="p-3 text-center font-medium">
+                        <th className="p-2 sm:p-3 text-left font-medium">Date</th>
+                        <th className="p-2 sm:p-3 text-center font-medium">
                           Sentiment Score
                         </th>
-                        <th className="p-3 text-center font-medium">
+                        <th className="p-2 sm:p-3 text-center font-medium">
                           Sentiment Level
                         </th>
                       </tr>
@@ -1529,13 +1533,13 @@ const SentimentDashboard = () => {
                             key={index}
                             className="border-b hover:bg-muted/50"
                           >
-                            <td className="p-3 font-medium">
+                            <td className="p-2 sm:p-3 font-medium text-xs sm:text-sm">
                               {row.weekRange || row.date}
                             </td>
-                            <td className="p-3 text-center font-mono">
+                            <td className="p-2 sm:p-3 text-center font-mono text-xs sm:text-sm">
                               {score.toFixed(2)}
                             </td>
-                            <td className="p-3 text-center">
+                            <td className="p-2 sm:p-3 text-center">
                               <Badge
                                 variant={badge.variant}
                                 className="text-xs"
@@ -1551,13 +1555,13 @@ const SentimentDashboard = () => {
                 </div>
               ) : (
                 <div
-                  className="w-full relative"
-                  style={{ height: "calc(100vh - 400px)", minHeight: "400px" }}
+                  className="w-full relative overflow-x-auto"
+                  style={{ height: "calc(100vh - 400px)", minHeight: "300px" }}
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={currentData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      margin={{ top: 10, right: 10, left: 10, bottom: 40 }}
                     >
                       <defs>
                         {/* Gradient for negative sentiment area (above neutral) */}
@@ -1723,18 +1727,18 @@ const SentimentDashboard = () => {
               )}
 
               {/* Sentiment Scale - Moved to bottom of chart with horizontal orientation */}
-              <div className="border-t mt-4">
-                <div className="flex items-end gap-6 py-3">
-                  <span className="text-xs font-medium text-muted-foreground mb-1">
+              <div className="border-t mt-3 sm:mt-4">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 md:gap-6 py-2 sm:py-3 px-2 sm:px-0">
+                  <span className="text-xs font-medium text-muted-foreground mb-0 sm:mb-1 shrink-0">
                     Sentiment Scale:
                   </span>
-                  <div className="flex items-end gap-3">
+                  <div className="flex flex-wrap items-end gap-2 sm:gap-3">
                     {sentimentScale.map((item) => (
                       <div
                         key={item.value}
                         className="flex flex-col items-center gap-1"
                       >
-                        <div className={cn("p-1.5 rounded-md", item.bgColor)}>
+                        <div className={cn("p-1 sm:p-1.5 rounded-md", item.bgColor)}>
                           <item.icon className={cn("h-3 w-3", item.color)} />
                         </div>
                         <div className="text-center">

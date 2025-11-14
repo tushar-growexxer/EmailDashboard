@@ -62,7 +62,7 @@ const DialogContent = React.forwardRef(({ children, className, onClose, ...props
       aria-modal="true"
       className={cn(
         "relative bg-background border border-border rounded-lg shadow-2xl",
-        "w-full max-w-lg max-h-[90vh] overflow-hidden",
+        "w-full max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-hidden",
         "animate-in zoom-in-95 fade-in duration-200",
         className
       )}
@@ -82,7 +82,7 @@ DialogContent.displayName = "DialogContent";
  * Dialog Header
  */
 const DialogHeader = ({ children, className }) => (
-  <div className={cn("flex flex-col space-y-1.5 p-6 border-b", className)}>
+  <div className={cn("flex flex-col space-y-1.5 p-4 sm:p-6 border-b", className)}>
     {children}
   </div>
 );
@@ -91,7 +91,7 @@ const DialogHeader = ({ children, className }) => (
  * Dialog Title
  */
 const DialogTitle = ({ children, className }) => (
-  <h2 className={cn("text-xl font-semibold leading-none tracking-tight", className)}>
+  <h2 className={cn("text-lg sm:text-xl font-semibold leading-none tracking-tight", className)}>
     {children}
   </h2>
 );
@@ -100,7 +100,7 @@ const DialogTitle = ({ children, className }) => (
  * Dialog Description
  */
 const DialogDescription = ({ children, className }) => (
-  <p className={cn("text-sm text-muted-foreground", className)}>
+  <p className={cn("text-xs sm:text-sm text-muted-foreground", className)}>
     {children}
   </p>
 );
@@ -109,7 +109,7 @@ const DialogDescription = ({ children, className }) => (
  * Dialog Body - Scrollable content area
  */
 const DialogBody = ({ children, className }) => (
-  <div className={cn("p-6 overflow-y-auto max-h-[calc(90vh-180px)]", className)}>
+  <div className={cn("p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-180px)]", className)}>
     {children}
   </div>
 );
@@ -118,7 +118,7 @@ const DialogBody = ({ children, className }) => (
  * Dialog Footer
  */
 const DialogFooter = ({ children, className }) => (
-  <div className={cn("flex items-center justify-end gap-3 p-6 border-t", className)}>
+  <div className={cn("flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-4 sm:p-6 border-t", className)}>
     {children}
   </div>
 );
@@ -195,12 +195,12 @@ const ConfirmDialog = ({
             </div>
           </div>
         )}
-        <div className="text-center p-6 pb-0">
+        <div className="text-center p-4 sm:p-6 pb-0">
           {title && (
-            <h2 className="text-xl font-semibold mb-2">{title}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold mb-2">{title}</h2>
           )}
           {description && (
-            <p className="text-sm text-muted-foreground mb-4">{description}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">{description}</p>
           )}
           {children}
         </div>
@@ -210,7 +210,7 @@ const ConfirmDialog = ({
             onClick={handleCancel}
             disabled={isLoading}
             className={cn(
-              "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors",
+              "flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg font-medium text-xs sm:text-sm transition-colors",
               "border border-border bg-background hover:bg-accent",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
@@ -222,7 +222,7 @@ const ConfirmDialog = ({
             onClick={handleConfirm}
             disabled={isLoading}
             className={cn(
-              "flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-colors",
+              "flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg font-medium text-xs sm:text-sm transition-colors",
               "flex items-center justify-center gap-2",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               variantStyles[variant]

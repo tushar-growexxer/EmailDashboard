@@ -2,9 +2,42 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/src/assets/matangi-logo.png" />
+    <link rel="icon" type="image/png" href="/src/assets/email-pilot_powered_by_growexx.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Matangi Email Dashboard</title>
+    <title>Email Pilot - Email Analytics Dashboard</title>
+    
+    <!-- Performance optimizations for LCP -->
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    
+    <!-- Preconnect to API server for faster API calls -->
+    <link rel="preconnect" href="http://192.168.10.6:3000" crossorigin />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/assets/email-pilot_powered_by_growexx.png" as="image" type="image/png" />
+    
+    <!-- Resource hints for faster loading -->
+    <meta http-equiv="x-dns-prefetch-control" content="on" />
+    
+    <!-- Prevent render-blocking -->
+    <style>
+      /* Critical CSS: Prevent layout shift during load */
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Loading state styles */
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

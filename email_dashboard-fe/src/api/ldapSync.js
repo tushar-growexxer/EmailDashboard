@@ -74,6 +74,28 @@ class LdapSyncApiService extends BaseApiService {
       };
     }
   }
+
+  /**
+   * Delete an LDAP user
+   * Also deletes the user from UserManager (OAuth tokens)
+   * @param {string} sAMAccountName - User's sAMAccountName
+   * @returns {Promise<Object>} Delete result
+   */
+  async deleteLdapUser(sAMAccountName) {
+    try {
+      const response = await this.delete(`/ldap-sync/users/${sAMAccountName}`);
+      return {
+        success: true,
+        ...response,
+      };
+    } catch (error) {
+      console.error('Delete LDAP user failed:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete LDAP user',
+      };
+    }
+  }
 }
 
 // Export singleton instance

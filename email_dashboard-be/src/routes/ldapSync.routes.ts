@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { ldapSyncController } from '../controllers/ldapSync.controller';
-import { authenticateToken, requireAdmin } from '../middlewares/auth.middleware';
+import { authenticateToken, authorizeRoles } from '../middlewares/auth.middleware';
 
 /**
- * LDAP Sync routes (Admin only)
+ * LDAP Sync routes (Admin and Super Admin only)
  */
 const router: Router = Router();
 
-// Apply authentication and admin authorization to all routes
+// Apply authentication and admin/super admin authorization to all routes
 router.use(authenticateToken);
-router.use(requireAdmin);
+router.use(authorizeRoles(['admin', 'super admin']));
 
 /**
  * @route   POST /api/ldap-sync/sync
@@ -33,6 +33,16 @@ router.get('/users', ldapSyncController.getSyncedUsers.bind(ldapSyncController))
 router.patch(
   '/users/:sAMAccountName',
   ldapSyncController.updateUserStatus.bind(ldapSyncController)
+);
+
+/**
+ * @route   DELETE /api/ldap-sync/users/:sAMAccountName
+ * @desc    Delete an LDAP user (also deletes from UserManager)
+ * @access  Private (Admin only)
+ */
+router.delete(
+  '/users/:sAMAccountName',
+  ldapSyncController.deleteUser.bind(ldapSyncController)
 );
 
 export default router;

@@ -9,6 +9,29 @@ import logger from '../config/logger';
  */
 export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  
+  // Log incoming request
+  logger.info(`[REQ-${requestId}] ========== Incoming Request ==========`);
+  logger.info(`[REQ-${requestId}] ${req.method} ${req.originalUrl}`);
+  logger.info(`[REQ-${requestId}] IP: ${req.ip || req.connection.remoteAddress || 'unknown'}`);
+  logger.info(`[REQ-${requestId}] User-Agent: ${req.get('User-Agent') || 'unknown'}`);
+  logger.info(`[REQ-${requestId}] Origin: ${req.get('Origin') || 'none'}`);
+  logger.info(`[REQ-${requestId}] Referer: ${req.get('Referer') || 'none'}`);
+  
+  // Log query params if present
+  if (Object.keys(req.query).length > 0) {
+    logger.info(`[REQ-${requestId}] Query params:`, req.query);
+  }
+  
+  // Log body for POST/PUT/PATCH (excluding sensitive fields)
+  if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) {
+    const sanitizedBody = { ...req.body };
+    // Remove sensitive fields
+    if (sanitizedBody.password) sanitizedBody.password = '***';
+    if (sanitizedBody.token) sanitizedBody.token = '***';
+    logger.info(`[REQ-${requestId}] Body:`, sanitizedBody);
+  }
   
   res.on('finish', () => {
     const durationMs = Date.now() - start;
@@ -28,12 +51,13 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     
     // Log with appropriate level based on status code
     if (res.statusCode >= 500) {
-      logger.error(`HTTP ${req.method} ${req.originalUrl}`, logData);
+      logger.error(`[REQ-${requestId}] ❌ ${req.method} ${req.originalUrl} - ${res.statusCode} (${durationMs}ms)`, logData);
     } else if (res.statusCode >= 400) {
-      logger.warn(`HTTP ${req.method} ${req.originalUrl}`, logData);
+      logger.warn(`[REQ-${requestId}] ⚠ ${req.method} ${req.originalUrl} - ${res.statusCode} (${durationMs}ms)`, logData);
     } else {
-      logger.info(`HTTP ${req.method} ${req.originalUrl}`, logData);
+      logger.info(`[REQ-${requestId}] ✓ ${req.method} ${req.originalUrl} - ${res.statusCode} (${durationMs}ms)`, logData);
     }
+    logger.info(`[REQ-${requestId}] ========== Request Complete ==========`);
   });
   
   next();

@@ -24,12 +24,13 @@ const AdminRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If authenticated but not admin, redirect to dashboard
-  if (user?.role?.toLowerCase() !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+  // If authenticated but not admin or super admin, redirect to email-analytics dashboard
+  const userRole = user?.role?.toLowerCase();
+  if (userRole !== 'admin' && userRole !== 'super admin') {
+    return <Navigate to="/email-analytics" replace />;
   }
 
-  // User is authenticated and is admin, render the protected component
+  // User is authenticated and is admin or super admin, render the protected component
   return children;
 };
 

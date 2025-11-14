@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { userModel, CreateUserData, UpdateUserData, User } from '../models/User';
 import { db } from '../config/database';
 import logger from '../config/logger';
+import { userManagerService } from './userManager.service';
 
 /**
  * User service class for business logic operations
@@ -136,7 +137,7 @@ export class UserService {
   async updateUser(id: number, updateData: UpdateUserData): Promise<User> {
     try {
       // Validate role if provided
-      if (updateData.role && !['admin', 'user'].includes(updateData.role)) {
+      if (updateData.role && !['admin', 'user','super admin'].includes(updateData.role)) {
         throw new Error('Invalid role. Must be either "admin" or "user"');
       }
 
@@ -166,10 +167,34 @@ export class UserService {
         return false;
       }
 
+      // CRITICAL: Terminate session FIRST before deleting user
+      // This ensures the thread is stopped before user deletion
+      logger.info(`[USER-SERVICE] Terminating session for ${user.email} (must succeed before deletion)...`);
+      const { sessionTerminationService } = await import('./sessionTermination.service');
+      const sessionTerminated = await sessionTerminationService.terminateSession(user.email);
+      
+      if (!sessionTerminated) {
+        logger.error(`[USER-SERVICE] ❌ Session termination failed for ${user.email} - aborting user deletion`);
+        throw new Error(`Failed to terminate session for ${user.email}. User deletion aborted.`);
+      }
+      
+      logger.info(`[USER-SERVICE] ✓ Session terminated successfully for ${user.email}`);
+      logger.info(`[USER-SERVICE] Proceeding with user deletion...`);
+
+      // Only delete from database if session termination succeeded
       const deleted = await userModel.deleteById(id);
       
       if (deleted) {
         logger.info(`User deleted successfully: ${user.email}`);
+        
+        // Also delete from UserManager if user exists there
+        try {
+          await userManagerService.deleteUser(user.email);
+          logger.info(`User also deleted from UserManager: ${user.email}`);
+        } catch (userManagerError) {
+          // Log error but don't fail the deletion if UserManager deletion fails
+          logger.warn(`Failed to delete user from UserManager: ${userManagerError}`);
+        }
       }
       
       return deleted;

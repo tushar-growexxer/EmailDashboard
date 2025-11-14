@@ -12,6 +12,9 @@ const SidebarNew = ({ user }) => {
     <div
       className={cn(
         "fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col z-40 transition-all duration-300 ease-in-out",
+        // Mobile: hidden by default, show on larger screens
+        "hidden sm:flex",
+        // Desktop widths
         isSidebarOpen ? "w-[230px]" : "w-[72px]"
       )}
     >
@@ -21,8 +24,8 @@ const SidebarNew = ({ user }) => {
       {/* Navigation */}
       <SidebarNavigation userRole={user?.role} />
 
-      {/* Footer */}
-      <SidebarFooter />
+      {/* Footer
+      <SidebarFooter /> */}
     </div>
   );
 };
